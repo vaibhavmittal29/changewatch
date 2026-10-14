@@ -1,68 +1,22 @@
 import crypto from 'node:crypto';
 import type { Database } from 'better-sqlite3';
 import { env } from '../config.js';
-import { politeness, PolitenessManager } from './politeness.js';
+import { politeness } from './politeness.js';
 import { checkRobotsPermission } from './robots.js';
-import { atomicClaimJob, heartbeatJob, startJob, completeJob, failOrRetryJob, recoverExpiredLeases } from './jobs.js';
+import { atomicClaimJob, heartbeatJob, startJob, completeJob, recoverExpiredLeases } from './jobs.js';
 import { capturePage } from '../capture/playwrightCapture.js';
 import { CaptureConfigSchema } from '../capture/captureConfig.js';
 import { classifyCheck } from '../capture/classifier.js';
-import { evaluateSubscriptionChange } from '../engine/changeDetector.js';
+import {
+  type WorkerCandidateRow,
+  type SubscriptionRow,
+  type ObservationRow,
+  handleBlockedByRobots,
+  processOkOutcome,
+  handleFailedCapture,
+} from './workerHandlers.js';
 
-export interface WorkerCandidateRow {
-  id: string;
-  kind: 'CHECK' | 'PROBE';
-  target_id: string;
-  capture_fingerprint: string | null;
-  subscription_id: string | null;
-  hostname: string;
-  canonical_url: string;
-}
-
-interface SubscriptionRow {
-  id: string;
-  target_id: string;
-  interval_minutes: number;
-  capture_config: string;
-  capture_fingerprint: string;
-  next_check_at: string;
-  include_selectors: string;
-  ignore_selectors: string;
-}
-
-interface ObservationRow {
-  id: string;
-  sanitized_dom: string;
-  raw_text: string;
-  captured_at: string;
-}
-
-/**
- * Inserts an execution record into check_runs table.
- */
-function recordCheckRun(
-  db: Database,
-  subscriptionId: string | null,
-  targetId: string,
-  jobId: string,
-  outcome: 'OK' | 'ERROR' | 'BLOCKED',
-  reason: string | null,
-  httpStatus: number | null,
-  durationMs: number,
-  wasDeduplicated: boolean
-): void {
-  const id = crypto.randomUUID();
-  const nowIso = new Date().toISOString();
-  db.prepare(`
-    INSERT INTO check_runs (
-      id, subscription_id, target_id, job_id, outcome, reason,
-      http_status, duration_ms, was_deduplicated, created_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(
-    id, subscriptionId, targetId, jobId, outcome, reason,
-    httpStatus, durationMs, wasDeduplicated ? 1 : 0, nowIso
-  );
-}
+export { type WorkerCandidateRow, type SubscriptionRow, type ObservationRow } from './workerHandlers.js';
 
 export class WorkerPool {
   private isRunning = false;
@@ -178,7 +132,7 @@ export class WorkerPool {
       // 1. Robots.txt evaluation
       const robots = await checkRobotsPermission(this.db, canonicalUrl);
       if (!robots.allowed) {
-        await this.handleBlockedByRobots(candidate, robots.reason ?? 'robots_disallowed');
+        handleBlockedByRobots(this.db, candidate, robots.reason ?? 'robots_disallowed');
         return;
       }
 
@@ -186,7 +140,8 @@ export class WorkerPool {
       const nowIso = new Date().toISOString();
       const dueSubs = this.db.prepare(`
         SELECT id, target_id, interval_minutes, capture_config, capture_fingerprint,
-               next_check_at, include_selectors, ignore_selectors
+               next_check_at, include_selectors, ignore_selectors, sensitivity,
+               noise_filters, learned_ignore_patterns
         FROM subscriptions
         WHERE target_id = ? AND capture_fingerprint = ? AND is_paused = 0 AND next_check_at <= ?
       `).all(targetId, fingerprint, nowIso) as SubscriptionRow[];
@@ -205,8 +160,7 @@ export class WorkerPool {
       `).get(targetId, fingerprint, reuseCutoff) as ObservationRow | undefined;
 
       if (existingObs) {
-        // Reuse cached capture
-        this.processOkOutcome(dueSubs, jobId, targetId, 0, true, existingObs);
+        processOkOutcome(this.db, dueSubs, jobId, targetId, 0, true, existingObs);
         return;
       }
 
@@ -249,10 +203,10 @@ export class WorkerPool {
           captured_at: capturedAt,
         };
 
-        this.processOkOutcome(dueSubs, jobId, targetId, durationMs, false, newObs);
+        processOkOutcome(this.db, dueSubs, jobId, targetId, durationMs, false, newObs);
       } else {
-        await this.handleFailedCapture(
-          dueSubs, jobId, targetId, classification.outcome, classification.reason,
+        handleFailedCapture(
+          this.db, dueSubs, jobId, targetId, classification.outcome, classification.reason,
           captureResult.httpStatus, durationMs
         );
       }
@@ -260,74 +214,5 @@ export class WorkerPool {
       clearInterval(heartbeatTimer);
       politeness.releaseDomain(hostname, Date.now());
     }
-  }
-
-  private handleBlockedByRobots(candidate: WorkerCandidateRow, reason: string): void {
-    const dueSubs = this.db.prepare(`
-      SELECT id, interval_minutes FROM subscriptions
-      WHERE target_id = ? AND capture_fingerprint = ? AND is_paused = 0
-    `).all(candidate.target_id, candidate.capture_fingerprint) as { id: string; interval_minutes: number }[];
-
-    for (const sub of dueSubs) {
-      recordCheckRun(this.db, sub.id, candidate.target_id, candidate.id, 'BLOCKED', reason, null, 0, false);
-      this.incrementFailureAndAdvance(sub.id, sub.interval_minutes);
-    }
-
-    failOrRetryJob(this.db, candidate.id, reason, false);
-  }
-
-  private processOkOutcome(
-    dueSubs: SubscriptionRow[],
-    jobId: string,
-    targetId: string,
-    durationMs: number,
-    wasDeduplicated: boolean,
-    observation: ObservationRow
-  ): void {
-    for (const sub of dueSubs) {
-      evaluateSubscriptionChange(this.db, sub, observation);
-
-      recordCheckRun(this.db, sub.id, targetId, jobId, 'OK', null, 200, durationMs, wasDeduplicated);
-      this.db.prepare('UPDATE sub_state SET consecutive_failures = 0 WHERE subscription_id = ?').run(sub.id);
-
-      const nextMs = Date.now() + PolitenessManager.addJitter(sub.interval_minutes * 60 * 1000, 0.1);
-      this.db.prepare('UPDATE subscriptions SET next_check_at = ? WHERE id = ?')
-        .run(new Date(nextMs).toISOString(), sub.id);
-    }
-
-    completeJob(this.db, jobId);
-  }
-
-  private async handleFailedCapture(
-    dueSubs: SubscriptionRow[],
-    jobId: string,
-    targetId: string,
-    outcome: 'ERROR' | 'BLOCKED',
-    reason: string | null,
-    httpStatus: number | null,
-    durationMs: number
-  ): Promise<void> {
-    for (const sub of dueSubs) {
-      recordCheckRun(this.db, sub.id, targetId, jobId, outcome, reason, httpStatus, durationMs, false);
-    }
-
-    const isTransient = outcome === 'ERROR' && (reason === 'timeout' || reason === 'network_error' || (httpStatus !== null && httpStatus >= 500));
-    const retryResult = failOrRetryJob(this.db, jobId, reason ?? outcome, isTransient);
-
-    // Acceptance Matrix AK: Only increment consecutive_failures when job is permanently exhausted or non-transient
-    if (retryResult.exhausted || !retryResult.retried) {
-      for (const sub of dueSubs) {
-        this.incrementFailureAndAdvance(sub.id, sub.interval_minutes);
-      }
-    }
-  }
-
-  private incrementFailureAndAdvance(subId: string, intervalMinutes: number): void {
-    this.db.prepare('UPDATE sub_state SET consecutive_failures = consecutive_failures + 1 WHERE subscription_id = ?')
-      .run(subId);
-
-    const nextMs = Date.now() + PolitenessManager.addJitter(intervalMinutes * 60 * 1000, 0.1);
-    this.db.prepare('UPDATE subscriptions SET next_check_at = ? WHERE id = ?')
-      .run(new Date(nextMs).toISOString(), subId);
   }
 }

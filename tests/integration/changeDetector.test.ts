@@ -78,7 +78,15 @@ describe('Phase 4 Integration: Hashing, Baseline & Version History (Acceptance M
 
   it('creates Version 1 baseline on the first check, and 5 stable checks create exactly 1 version (Acceptance Matrix L)', () => {
     const { targetId, subId } = setupSubscription();
-    const subInput = { id: subId, include_selectors: '[]', ignore_selectors: '[]' };
+    const subInput = {
+      id: subId,
+      interval_minutes: 15,
+      sensitivity: 'balanced' as const,
+      include_selectors: '[]',
+      ignore_selectors: '[]',
+      noise_filters: '{}',
+      learned_ignore_patterns: '[]',
+    };
     const stableDom = '<div><h1>Stable Title</h1><p>Stable content paragraph.</p></div>';
     const stableText = 'Stable Title\nStable content paragraph.';
 
@@ -87,8 +95,8 @@ describe('Phase 4 Integration: Hashing, Baseline & Version History (Acceptance M
     const res1 = evaluateSubscriptionChange(db, subInput, { id: obsId1, sanitized_dom: stableDom, raw_text: stableText });
 
     expect(res1.action).toBe('BASELINE_CREATED');
-    expect(res1.version.version_number).toBe(1);
-    expect(res1.version.change_summary).toBe('Baseline (Version 1)');
+    expect(res1.version?.version_number).toBe(1);
+    expect(res1.version?.change_summary).toBe('Baseline (Version 1)');
 
     const active1 = getActiveVersion(db, subId);
     expect(active1).not.toBeNull();
@@ -100,7 +108,7 @@ describe('Phase 4 Integration: Hashing, Baseline & Version History (Acceptance M
       const res = evaluateSubscriptionChange(db, subInput, { id: obsId, sanitized_dom: stableDom, raw_text: stableText });
 
       expect(res.action).toBe('UNCHANGED');
-      expect(res.version.version_number).toBe(1);
+      expect(res.version?.version_number).toBe(1);
       expect(res.contentHash).toBe(res1.contentHash);
     }
 
@@ -110,9 +118,17 @@ describe('Phase 4 Integration: Hashing, Baseline & Version History (Acceptance M
     expect(history[0].version_number).toBe(1);
   });
 
-  it('creates Version 2 when headline changes (Acceptance Matrix M)', () => {
+  it('creates Version 2 when headline changes after confirmation (Acceptance Matrix M, P)', () => {
     const { targetId, subId } = setupSubscription();
-    const subInput = { id: subId, include_selectors: '[]', ignore_selectors: '[]' };
+    const subInput = {
+      id: subId,
+      interval_minutes: 15,
+      sensitivity: 'balanced' as const,
+      include_selectors: '[]',
+      ignore_selectors: '[]',
+      noise_filters: '{}',
+      learned_ignore_patterns: '[]',
+    };
 
     // Baseline
     const v1Dom = '<div><h1>Original Headline</h1></div>';
@@ -120,14 +136,21 @@ describe('Phase 4 Integration: Hashing, Baseline & Version History (Acceptance M
     const obs1 = createObservation(targetId, v1Dom, v1Text);
     evaluateSubscriptionChange(db, subInput, { id: obs1, sanitized_dom: v1Dom, raw_text: v1Text });
 
-    // Headline change
+    // Headline change - Check 1: Candidate recorded
     const v2Dom = '<div><h1>Breaking News: Major Discovery</h1></div>';
     const v2Text = 'Breaking News: Major Discovery';
     const obs2 = createObservation(targetId, v2Dom, v2Text);
     const res2 = evaluateSubscriptionChange(db, subInput, { id: obs2, sanitized_dom: v2Dom, raw_text: v2Text });
 
-    expect(res2.action).toBe('VERSION_COMMITTED');
-    expect(res2.version.version_number).toBe(2);
+    expect(res2.action).toBe('CANDIDATE_RECORDED');
+    expect(res2.recheckDelayMs).toBe(120_000);
+
+    // Headline change - Check 2: Confirmation re-check with same candidate -> Version 2 committed
+    const obs3 = createObservation(targetId, v2Dom, v2Text);
+    const res3 = evaluateSubscriptionChange(db, subInput, { id: obs3, sanitized_dom: v2Dom, raw_text: v2Text });
+
+    expect(res3.action).toBe('CHANGE_CONFIRMED');
+    expect(res3.version?.version_number).toBe(2);
 
     const active = getActiveVersion(db, subId);
     expect(active?.version_number).toBe(2);
@@ -148,7 +171,15 @@ describe('Phase 4 Integration: Hashing, Baseline & Version History (Acceptance M
     const obs1 = createObservation(targetId, v1Dom, v1Text);
     evaluateSubscriptionChange(
       db,
-      { id: subId, include_selectors: '[]', ignore_selectors: '[]' },
+      {
+        id: subId,
+        interval_minutes: 15,
+        sensitivity: 'balanced',
+        include_selectors: '[]',
+        ignore_selectors: '[]',
+        noise_filters: '{}',
+        learned_ignore_patterns: '[]',
+      },
       { id: obs1, sanitized_dom: v1Dom, raw_text: v1Text }
     );
 
@@ -187,7 +218,15 @@ describe('Phase 4 Integration: Hashing, Baseline & Version History (Acceptance M
 
     evaluateSubscriptionChange(
       db,
-      { id: subId, include_selectors: '[]', ignore_selectors: '[]' },
+      {
+        id: subId,
+        interval_minutes: 15,
+        sensitivity: 'balanced',
+        include_selectors: '[]',
+        ignore_selectors: '[]',
+        noise_filters: '{}',
+        learned_ignore_patterns: '[]',
+      },
       { id: obsId, sanitized_dom: dom, raw_text: 'Guarded History' }
     );
 

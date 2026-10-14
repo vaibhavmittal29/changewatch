@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { applyNoiseFilters, type NoiseFilterConfig } from './noiseFilters.js';
 
 /**
  * Text Normalization Engine (Phase 4 baseline + Phase 5 extensibility)
@@ -33,11 +34,15 @@ export function normalizeWhitespace(text: string): string {
   return cleanedLines.join('\n');
 }
 
-/**
- * Produces normalized text according to Phase 4 rules.
- */
-export function normalizeText(text: string): string {
-  return normalizeWhitespace(text);
+export function normalizeText(
+  text: string,
+  noiseFilters?: NoiseFilterConfig,
+  learnedPatterns?: string[]
+): string {
+  const filtered = noiseFilters || (learnedPatterns && learnedPatterns.length > 0)
+    ? applyNoiseFilters(text, noiseFilters, learnedPatterns)
+    : text;
+  return normalizeWhitespace(filtered);
 }
 
 /**
