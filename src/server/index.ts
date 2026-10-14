@@ -6,16 +6,35 @@ import { getDb } from './db/index.js';
 import { migrate } from './db/migrate.js';
 import { env } from './config.js';
 
+import { Scheduler } from './queue/scheduler.js';
+import { WorkerPool } from './queue/worker.js';
+import { startDemoServer } from './demo/demoServer.js';
+import { closeBrowser } from './capture/playwrightCapture.js';
+
 async function startServer() {
   // 1. Initialize database & apply schema
   const db = getDb();
   migrate(db);
   console.log(`[Database] SQLite connected at ${env.DATABASE_PATH} (WAL mode, FK enabled)`);
 
-  // 2. Create Express app
+  // 2. Start background queue scheduler and worker pool
+  const scheduler = new Scheduler(db);
+  scheduler.start();
+  console.log(`[Scheduler] Background scheduler started (tick ${env.TICK_MS}ms)`);
+
+  const workerPool = new WorkerPool(db);
+  workerPool.start();
+  console.log(`[WorkerPool] Worker pool started (${env.WORKER_CONCURRENCY} workers)`);
+
+  // 3. Start local demo server if enabled
+  if (env.ALLOW_LOCAL_DEMO) {
+    await startDemoServer(env.DEMO_PORT);
+  }
+
+  // 4. Create Express app
   const app = createApp();
 
-  // 3. Vite development middleware or static production client
+  // 5. Vite development middleware or static production client
   if (env.NODE_ENV !== 'production') {
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
@@ -35,10 +54,23 @@ async function startServer() {
     }
   }
 
-  // 4. Start listening on single port
+  // 6. Start listening on single port
   const server = app.listen(env.PORT, '0.0.0.0', () => {
     console.log(`[ChangeWatch] Server running at ${env.BASE_URL} (Port ${env.PORT})`);
   });
+
+  const shutdown = async () => {
+    console.log('[ChangeWatch] Shutting down gracefully...');
+    scheduler.stop();
+    workerPool.stop();
+    await closeBrowser().catch(() => {});
+    server.close(() => {
+      process.exit(0);
+    });
+  };
+
+  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', shutdown);
 
   return server;
 }
