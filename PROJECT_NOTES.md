@@ -1,0 +1,246 @@
+# ChangeWatch — Project Notes
+
+**Single Source of Truth Plan:** [`docs/implementation_plan.md`](./docs/implementation_plan.md)  
+**Current Phase:** Phase 0 (Planning and environment readiness) — STOPPED FOR USER APPROVAL  
+**Last Updated:** Phase 0 Scaffold Initialization
+
+---
+
+## 1. Scope Tiers Confirmation
+
+- **MUST (Core MVP - Satisfies all 8 Requirements & 4 Design Questions):**
+  - Auth & session management (PBKDF2, sessions, CSRF, rate limit)
+  - Subscription CRUD (quotas, interval 15–1440 min, ownership isolation)
+  - Canonical capture configuration & deterministic SHA-256 fingerprinting
+  - Playwright headless capture worker (route interception, WebSocket closed, service workers blocked)
+  - SSRF protection (`validateUrl`, `safeFetch`, unicast IP policy, DNS rebinding mitigation)
+  - Outcome classifier (`OK`, `ERROR`, `BLOCKED` with CAPTCHA/challenge detection)
+  - Durable SQLite job queue (atomic claim, lease/heartbeat, crash recovery)
+  - Politeness layer (origin-scoped robots.txt cache, per-domain lock + 10s gap, backoff, jitter, Retry-After)
+  - Shared fetch optimization (one fetch per target_id + capture_fingerprint, 15s reuse window)
+  - Content hashing & immutable version history (`ON DELETE RESTRICT`)
+  - Noise normalization (timestamps, counters, tokens, copyright years)
+  - Sensitivity gate (low/balanced/high Myers line diff threshold) & two-check confirmation re-check (`CONFIRM_DELAY`)
+  - Diff engine (Myers text diff lines/words, pixelmatch screenshot diff with padding)
+  - Visual selector picker (watch/ignore CSS selectors, fragile class warning, single extraction contract)
+  - Notifications outbox (Discord webhook, Telegram, in-app outbox, truthful states, idempotency)
+  - Dashboard & timeline UI (status badges, auto-refresh, version compare)
+  - Local demo server (14+ fixtures on port 4000) & smoke test suite (`scripts/smoke.ts`)
+
+- **STRONG (Quality Multipliers - To execute after MUST criteria pass):**
+  - Volatility probe (suggests unstable lines on subscription creation)
+  - Cooldown gate (6h suppression to digest)
+  - Noisy flag (>70% candidate changes in rolling window)
+  - Daily digest outbox at configured hour
+  - Email notification via Nodemailer (SMTP env)
+  - Routine retention cleanup + cascading deletion workflow
+  - 200-subscription scalability benchmark (`scripts/benchmark.ts`)
+  - Myers word-level inline diff polish
+
+- **STRETCH (Deferred / Post-MVP):**
+  - Keyword-only alerts
+  - Numeric metric tracking & Chart.js visualizer
+  - Gemini GenAI one-line summary generator
+  - Per-page RSS feed
+  - `http_dom` (Cheerio) alternative engine
+  - Chrome browser extension
+
+---
+
+## 2. Directory Structure
+
+```text
+changewatch/
+  docs/
+    implementation_plan.md      # Single source of truth v2
+    INTERVIEW_QA.md             # Model interview Q&A
+    evidence/                   # Phase verification evidence & screenshots
+      README.md
+      phase-0/
+      phase-1/
+      ...
+  PROJECT_NOTES.md              # Living state, decisions & acceptance log
+  README.md                     # Public documentation & architecture guide
+  .env.example                  # Environment configuration template
+  .env                          # Local environment (gitignored)
+  .gitignore                    # Git ignore file
+  package.json                  # Node dependencies & scripts
+  tsconfig.json                # Strict TypeScript configuration
+  tsconfig.node.json           # Node-specific tsconfig (vite/server scripts)
+  vite.config.ts                # Client Vite configuration
+  vitest.config.ts              # Vitest configuration
+  src/
+    server/
+      index.ts                  # Bootstrap: DB, workers, Express, Vite middleware
+      config.ts                 # Zod validated env config
+      db/
+        index.ts                # Database connection & connection pragmas
+        schema.sql              # Raw DDL schema
+        migrate.ts              # Migration runner with user_version
+      auth/
+        password.ts             # PBKDF2 hashing & verification
+        sessions.ts             # Session tokens & CSRF token generator
+        csrf.ts                 # Double-submit / CSRF header verification
+        middleware.ts           # Authentication & rate limiting middleware
+      routes/
+        auth.ts                 # Register, login, logout, me
+        subscriptions.ts        # Monitor CRUD, pause, resume, check-now
+        dashboard.ts            # Summary metrics & monitor list
+        diff.ts                 # Text & screenshot diff APIs
+        picker.ts               # Screenshot element box renderer & test-selectors
+        notifications.ts        # In-app outbox & destination configuration
+        demo.ts                 # Demo fixtures controller
+      capture/
+        captureConfig.ts        # Canonical capture schema & deterministic fingerprint
+        validateUrl.ts          # SSRF URL validator & ipaddr.js unicast policy
+        safeFetch.ts            # IP-pinned fetch for robots.txt & redirects
+        playwrightCapture.ts    # Browser context, route filter, sanitized DOM, screenshot
+        extract.ts              # Single extraction contract (Cheerio block-level)
+        classifier.ts           # OK / ERROR / BLOCKED decision engine
+      queue/
+        jobs.ts                 # Queue insertion & state transitions
+        scheduler.ts            # Interval ticker & due-only grouping
+        worker.ts               # Worker pool, lease heartbeat, crash recovery
+        politeness.ts           # Domain lock, 10s domain gap, jitter, Retry-After
+        robots.ts               # Origin-scoped robots.txt fetcher & parser
+      engine/
+        normalize.ts            # Text normalization & regex noise stripping
+        changeDetector.ts       # Sensitivity gate, confirmation state machine, outage accounting
+        versions.ts             # Immutable version commit & active pointer
+        volatility.ts           # Volatility probe dual-fetch analyzer
+      diff/
+        textDiff.ts             # Myers diffLines & diffWords
+        imageDiff.ts            # Canvas padding & pixelmatch execution
+      notify/
+        crypto.ts               # AES-256-GCM encryption & masking for credentials
+        outbox.ts               # Outbox dispatcher with composite idempotency key
+        discord.ts              # Discord webhook payload sender
+        telegram.ts             # Telegram bot messaging
+        email.ts                # Nodemailer SMTP transport
+        digest.ts               # Daily digest aggregator
+      maintenance/
+        cleanup.ts              # Unreferenced observation & screenshot pruner
+        deleteFlow.ts           # Cascade subscription & orphan target removal
+      demo/
+        demoServer.ts           # Express demo fixture server on port 4000
+        fixtures.ts             # 16 controllable fixture handlers
+    client/
+      index.html
+      main.tsx
+      App.tsx
+      index.css
+      pages/
+        Login.tsx
+        Dashboard.tsx
+        MonitorDetail.tsx
+        Compare.tsx
+        Picker.tsx
+        Settings.tsx
+        TestRig.tsx
+      components/
+        Navbar.tsx
+        StatusBadge.tsx
+        Modal.tsx
+        DiffViewer.tsx
+        PickerOverlay.tsx
+  scripts/
+    seed.ts                     # Demo seed data
+    smoke.ts                    # End-to-end integration test runner
+    benchmark.ts                # Multi-subscription load benchmark
+  tests/
+    unit/
+      captureConfig.test.ts
+      validateUrl.test.ts
+      normalize.test.ts
+      classifier.test.ts
+      textDiff.test.ts
+      crypto.test.ts
+    integration/
+      auth.test.ts
+      queue.test.ts
+      scheduler.test.ts
+      changeDetector.test.ts
+      diff.test.ts
+      notifications.test.ts
+  data/                         # SQLite DB, screenshots/, diffs/ (gitignored)
+```
+
+---
+
+## 3. Windows PowerShell Setup Checklist
+
+- [x] **Node.js LTS Installed**: Node `v24.20.0` detected (`>= 20` required).
+- [x] **npm Installed**: npm `11.19.0` detected.
+- [x] **Git Installed**: Git `2.55.0.windows.4` detected.
+- [x] **Omniroute Installed**: Global `omniroute@3.8.49` verified per user rules.
+- [x] **Package Dependencies**: `npm install` pinned versions installed cleanly.
+- [x] **Native Addon Prebuilt Verification**: `better-sqlite3@13.0.3` installed and verified without compilation errors.
+- [x] **Playwright Chromium Browser**: Chromium installed and verified via `scripts/verify-ui.ts`.
+- [x] **Data Directory Creation**: Verified `data/screenshots` and `data/diffs` automatically created.
+
+---
+
+## 4. Key Assumptions & Open Questions (Max 5)
+
+1. **Port Strategy in Development:** Single Express server on port 3000 serves both API endpoints and the React frontend via Vite middleware (`vite.createServer({ server: { middlewareMode: true } })`), while the local demo fixture server runs separately on port 4000 when `ALLOW_LOCAL_DEMO=true`.
+2. **PBKDF2 Iterations:** Production default is set to `600,000` iterations for security, with tests and development scripts using `1,000` iterations via env override (`PBKDF2_ITERATIONS=1000`) for speed.
+3. **Database Concurrency:** SQLite in WAL mode handles multiple readers and single-writer transactions cleanly. Job claiming uses atomic `UPDATE ... RETURNING *` within explicit immediate transactions to prevent race conditions across worker concurrency.
+4. **Browser Subresource Blocking:** Playwright route handler will abort heavy media (`media`, `font`, `images` above threshold) and tracking scripts during change detection runs, but the Visual Selector Picker route (`POST /api/picker/render`) will retain layout CSS/images so users can visually select DOM elements accurately.
+5. **Confirmation Re-check Timing:** When a candidate change is observed, `next_check_at` is set to `now + CONFIRM_DELAY_MS` (default 2 minutes, or dev override for demo origin) rather than the standard monitor interval (15 min – 24 h), ensuring quick confirmation alerts while honoring the 10-second per-domain gap.
+
+---
+
+## 5. Acceptance Matrix (Live Status)
+
+| Ref | Tier | Requirement | How verified | Status | Evidence |
+|---|---|---|---|---|---|
+| A1 | MUST | Auth, sessions, ownership isolation (user B cannot read or edit user A's monitor) | Integration tests | PASS | [`tests/integration/auth.test.ts`](file:///c:/Programming/Projects%20of%20antigravity/project_6_webdev_vinnovateit_websitechangedetector3/tests/integration/auth.test.ts), [`docs/evidence/phase-1/api-flow.txt`](file:///c:/Programming/Projects%20of%20antigravity/project_6_webdev_vinnovateit_websitechangedetector3/docs/evidence/phase-1/api-flow.txt) |
+| A2 | MUST | CSRF header enforced; destination secrets masked in API and logs | Integration test + payload audit | PASS | [`tests/integration/auth.test.ts`](file:///c:/Programming/Projects%20of%20antigravity/project_6_webdev_vinnovateit_websitechangedetector3/tests/integration/auth.test.ts) |
+| B | MUST | SSRF: loopback, private, link-local, metadata, IPv6 ranges, IPv4-mapped IPv6, credentials in URL, bad ports all rejected; redirects re-validated | Unit + integration tests | NOT TESTED | |
+| C | MUST | Browser interception: disallowed subresource aborted, WebSocket closed, service workers blocked | Playwright integration test | NOT TESTED | |
+| D | MUST | Interval 15–1440 enforced; `next_check_at` set and advanced with ±10% jitter; dev override only for demo origin | Unit + integration tests | PASS | [`tests/integration/auth.test.ts`](file:///c:/Programming/Projects%20of%20antigravity/project_6_webdev_vinnovateit_websitechangedetector3/tests/integration/auth.test.ts), [`src/server/routes/subscriptions.ts`](file:///c:/Programming/Projects%20of%20antigravity/project_6_webdev_vinnovateit_websitechangedetector3/src/server/routes/subscriptions.ts) |
+| E | MUST | robots.txt honored per origin (http vs https separate), Allow/Disallow precedence, 4xx = allow, 5xx = disallow-for-now, raw body + headers cached 24 h | Unit tests | NOT TESTED | |
+| F | MUST | One navigation per domain at a time; minimum gap enforced | Fake-timer test | NOT TESTED | |
+| H | MUST | OK / ERROR / BLOCKED classification (503, 404, timeout, 403, 429, CAPTCHA, empty) | Unit + fixture tests | NOT TESTED | |
+| I | MUST | ERROR/BLOCKED leave baseline, pending state and versions untouched | Integration test | NOT TESTED | |
+| J | MUST | DOWN alert after `OUTAGE_THRESHOLD` failed jobs; RECOVERED alert on next OK | Integration test | NOT TESTED | |
+| K | MUST | SHA-256 hash stable for identical normalized text | Unit test | NOT TESTED | |
+| L | MUST | Stable page: 5 checks create exactly 1 version (baseline) | Integration test | NOT TESTED | |
+| M | MUST | Headline change creates version 2 after confirmation | Integration test | NOT TESTED | |
+| N | MUST | Timestamp, counter, token filters; clock/counter/token fixtures produce no alert | Unit + fixture tests | NOT TESTED | |
+| P | MUST | Candidate needs 2 consecutive matching checks; re-check scheduled after `CONFIRM_DELAY`, not the full interval; flip-back discards candidate | Integration test | NOT TESTED | |
+| R | MUST | Expired job leases recovered on startup; no job lost or double-run | Crash-recovery test | NOT TESTED | |
+| S | MUST | N compatible due subscriptions on one URL cause exactly 1 top-level navigation per cycle (N=20 MUST, N=200 STRONG) | Benchmark script | NOT TESTED | |
+| T | MUST | Text diff (added/removed) and screenshot diff (changed-pixel %) correct on fixtures | Unit + browser check | NOT TESTED | |
+| U | MUST | Picker generates selectors; Watch/Ignore saved and honored by checks | Browser walkthrough + integration test | NOT TESTED | |
+| V | MUST | Outbox states truthful (SENT_EXTERNAL only on provider 2xx; PENDING_CONFIG; RECORDED_IN_APP; RETRYING; FAILED) | Mocked-provider tests | NOT TESTED | |
+| W | MUST | Duplicate alert suppressed by idempotency key; channels deliver independently | Unit test | NOT TESTED | |
+| Y | MUST | Demo server fixtures 1–16 all selectable from the Test Rig | Browser walkthrough | NOT TESTED | |
+| AA | MUST | Only due subscriptions are evaluated and advanced in a shared capture | Integration test | NOT TESTED | |
+| AB | MUST | Different capture fingerprints on the same URL cause separate captures | Integration test | NOT TESTED | |
+| AF | MUST | Omitted defaults, explicit defaults, and reordered keys give identical fingerprints | Unit test | PASS | [`tests/unit/captureConfig.test.ts`](file:///c:/Programming/Projects%20of%20antigravity/project_6_webdev_vinnovateit_websitechangedetector3/tests/unit/captureConfig.test.ts) |
+| AG | MUST | Material config changes give different fingerprints | Unit test | PASS | [`tests/unit/captureConfig.test.ts`](file:///c:/Programming/Projects%20of%20antigravity/project_6_webdev_vinnovateit_websitechangedetector3/tests/unit/captureConfig.test.ts) |
+| AI | MUST | Capture config rejects unknown keys (e.g. `customHeaders`, `cookies`) | Unit test | PASS | [`tests/unit/captureConfig.test.ts`](file:///c:/Programming/Projects%20of%20antigravity/project_6_webdev_vinnovateit_websitechangedetector3/tests/unit/captureConfig.test.ts) |
+| AK | MUST | Retries do not inflate failure count; one exhausted job = one failure | Integration test | NOT TESTED | |
+| AH | MUST | `scripts/smoke.ts` passes end to end | Script output | NOT TESTED | |
+| O | STRONG | Volatility probe suggests unstable lines; approved patterns are applied | Integration test | NOT TESTED | |
+| Q | STRONG | Cooldown suppresses immediate alert (event kept for digest); noisy flag at >70% of last 10 | Integration test | NOT TESTED | |
+| Z | STRONG | Retention removes only unreferenced old observations; confirmed versions and pending candidates survive | Integration test | NOT TESTED | |
+| Z2 | STRONG | Deleting a monitor/account cleans cascade rows, orphan observations and screenshot files | Integration test | NOT TESTED | |
+| DG | STRONG | Daily digest sent once per user per day per channel | Integration test | NOT TESTED | |
+| EM | STRONG | Email via Nodemailer works with SMTP env, otherwise `PENDING_CONFIG` | Mocked test | NOT TESTED | |
+| X1 | STRETCH | `http_dom` engine with cross-field rule (screenshots require Playwright) | Tests | NOT TESTED | |
+| X2 | STRETCH | Keyword alerts, number tracking + chart, Gemini summary, RSS feed, browser extension | Per feature | NOT TESTED | |
+
+---
+
+## 6. Execution History Log
+
+| Timestamp | Phase | Action / Event | Outcome |
+|---|---|---|---|
+| Initial | Phase 0 | Implementation plan saved to `docs/implementation_plan.md` | Single source of truth recorded |
+| Initial | Phase 0 | Environment checks & directory layout planned | Node v24, Git, Omniroute ready |
+| Initial | Phase 0 | Scaffolded `PROJECT_NOTES.md` and `docs/evidence/` | Complete, approved by user |
+| Phase 1 | Phase 1 | Foundation, database, auth & subscription CRUD implemented | All unit & integration tests pass |
+| Phase 1 | Phase 1 | Diagnosed & resolved verification hang | Fixed missing `env` import in `middleware.ts`, added `-UseBasicParsing` & 10s timeout in PowerShell script |
+| Phase 1 | Phase 1 | Executed end-to-end API & Playwright UI verification | API verification passed; captured `login-ui.png` and `login-autofilled.png` |

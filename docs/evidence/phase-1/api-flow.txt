@@ -1,0 +1,28 @@
+﻿[2026-10-14T18:42:37.6718597+05:30] STEP 0: Checking Server Health...
+[2026-10-14T18:42:37.6924523+05:30] >>> [START HealthCheck] GET http://127.0.0.1:3000/api/health
+[2026-10-14T18:42:37.7436986+05:30] <<< [PASS HealthCheck] Status: 200 (41ms)
+[2026-10-14T18:42:37.7810331+05:30] Server is healthy. Timestamp: 2026-10-14T13:12:37.719Z
+[2026-10-14T18:42:37.7868149+05:30] STEP 1: Registering Test User (verifier_5df9f5ed@changewatch.local)...
+[2026-10-14T18:42:37.7873400+05:30] >>> [START Register] POST http://127.0.0.1:3000/api/auth/register
+[2026-10-14T18:42:37.7999835+05:30]     Payload: {"email":"verifier_5df9f5ed@changewatch.local","displayName":"Verifier 5df9f5ed","password":"StrongPassword123!"}
+[2026-10-14T18:42:37.8153239+05:30] <<< [PASS Register] Status: 201 (27ms)
+[2026-10-14T18:42:37.8195816+05:30] User registered successfully: ID=10fc5b46-e545-4327-92c3-4d472296982d, CSRF=9907cc9be46e8e5782a6013ffcdc22e47537485c3cda0788f969d11585560d8f
+[2026-10-14T18:42:37.8201477+05:30] STEP 2: Logging in as Test User...
+[2026-10-14T18:42:37.8217096+05:30] >>> [START Login] POST http://127.0.0.1:3000/api/auth/login
+[2026-10-14T18:42:37.8227416+05:30]     Payload: {"password":"StrongPassword123!","email":"verifier_5df9f5ed@changewatch.local"}
+[2026-10-14T18:42:37.8366976+05:30] <<< [PASS Login] Status: 200 (13ms)
+[2026-10-14T18:42:37.8382457+05:30] Login successful: DisplayName=Verifier 5df9f5ed
+[2026-10-14T18:42:37.8398403+05:30] STEP 3: Verifying active session via /api/auth/me...
+[2026-10-14T18:42:37.8414387+05:30] >>> [START GetMe] GET http://127.0.0.1:3000/api/auth/me
+[2026-10-14T18:42:37.8515181+05:30] <<< [PASS GetMe] Status: 200 (9ms)
+[2026-10-14T18:42:37.8554263+05:30] Session verified for user: verifier_5df9f5ed@changewatch.local
+[2026-10-14T18:42:37.8559867+05:30] STEP 4: Creating Subscription with CSRF Token...
+[2026-10-14T18:42:37.8570383+05:30] >>> [START CreateSubscription] POST http://127.0.0.1:3000/api/subscriptions
+[2026-10-14T18:42:37.8580778+05:30]     Payload: {"url":"https://example.com/pricing","name":"Pricing Monitor 5df9f5ed","sensitivity":"balanced","interval_minutes":30}
+[2026-10-14T18:42:37.8735161+05:30] <<< [PASS CreateSubscription] Status: 201 (15ms)
+[2026-10-14T18:42:37.8772693+05:30] Subscription created: ID=0b9721c7-c739-4bc4-a8ee-fe35ad294f49, Fingerprint=25a64aefa41ceff4de12fd297b14a8bb95072ffb4c83d5a535a38b54d936a60d
+[2026-10-14T18:42:37.8777897+05:30] STEP 5: Listing Subscriptions (Ownership Isolation Check)...
+[2026-10-14T18:42:37.8788818+05:30] >>> [START ListSubscriptions] GET http://127.0.0.1:3000/api/subscriptions
+[2026-10-14T18:42:37.8945213+05:30] <<< [PASS ListSubscriptions] Status: 200 (14ms)
+[2026-10-14T18:42:37.9202520+05:30] Verified subscription presence: Name='Pricing Monitor 5df9f5ed', CanonicalUrl='https://example.com/pricing'
+[2026-10-14T18:42:37.9249519+05:30] ALL PHASE 1 CHECKS PASSED
