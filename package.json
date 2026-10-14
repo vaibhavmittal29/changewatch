@@ -12,6 +12,7 @@
     "lint": "eslint \"src/**/*.{ts,tsx}\" \"tests/**/*.{ts,tsx}\" --max-warnings 0",
     "test": "vitest run",
     "seed": "tsx scripts/seed.ts",
+    "capture": "tsx scripts/capture.ts",
     "smoke": "tsx scripts/smoke.ts",
     "benchmark": "tsx scripts/benchmark.ts"
   },

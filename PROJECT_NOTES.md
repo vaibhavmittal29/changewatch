@@ -1,8 +1,8 @@
 # ChangeWatch — Project Notes
 
 **Single Source of Truth Plan:** [`docs/implementation_plan.md`](./docs/implementation_plan.md)  
-**Current Phase:** Phase 0 (Planning and environment readiness) — STOPPED FOR USER APPROVAL  
-**Last Updated:** Phase 0 Scaffold Initialization
+**Current Phase:** Phase 2 (Secure capture, classifier, and demo server) — COMPLETED  
+**Last Updated:** Phase 2 Complete (All 36 tests passing, evidence captured)
 
 ---
 
@@ -196,12 +196,12 @@ changewatch/
 |---|---|---|---|---|---|
 | A1 | MUST | Auth, sessions, ownership isolation (user B cannot read or edit user A's monitor) | Integration tests | PASS | [`tests/integration/auth.test.ts`](file:///c:/Programming/Projects%20of%20antigravity/project_6_webdev_vinnovateit_websitechangedetector3/tests/integration/auth.test.ts), [`docs/evidence/phase-1/api-flow.txt`](file:///c:/Programming/Projects%20of%20antigravity/project_6_webdev_vinnovateit_websitechangedetector3/docs/evidence/phase-1/api-flow.txt) |
 | A2 | MUST | CSRF header enforced; destination secrets masked in API and logs | Integration test + payload audit | PASS | [`tests/integration/auth.test.ts`](file:///c:/Programming/Projects%20of%20antigravity/project_6_webdev_vinnovateit_websitechangedetector3/tests/integration/auth.test.ts) |
-| B | MUST | SSRF: loopback, private, link-local, metadata, IPv6 ranges, IPv4-mapped IPv6, credentials in URL, bad ports all rejected; redirects re-validated | Unit + integration tests | NOT TESTED | |
-| C | MUST | Browser interception: disallowed subresource aborted, WebSocket closed, service workers blocked | Playwright integration test | NOT TESTED | |
+| B | MUST | SSRF: loopback, private, link-local, metadata, IPv6 ranges, IPv4-mapped IPv6, credentials in URL, bad ports all rejected; redirects re-validated | Unit + integration tests | PASS | [`tests/unit/validateUrl.test.ts`](file:///c:/Programming/Projects%20of%20antigravity/project_6_webdev_vinnovateit_websitechangedetector3/tests/unit/validateUrl.test.ts), [`tests/integration/capture.test.ts`](file:///c:/Programming/Projects%20of%20antigravity/project_6_webdev_vinnovateit_websitechangedetector3/tests/integration/capture.test.ts) |
+| C | MUST | Browser interception: disallowed subresource aborted, WebSocket closed, service workers blocked | Playwright integration test | PASS | [`src/server/capture/playwrightCapture.ts`](file:///c:/Programming/Projects%20of%20antigravity/project_6_webdev_vinnovateit_websitechangedetector3/src/server/capture/playwrightCapture.ts), [`tests/integration/capture.test.ts`](file:///c:/Programming/Projects%20of%20antigravity/project_6_webdev_vinnovateit_websitechangedetector3/tests/integration/capture.test.ts) |
 | D | MUST | Interval 15–1440 enforced; `next_check_at` set and advanced with ±10% jitter; dev override only for demo origin | Unit + integration tests | PASS | [`tests/integration/auth.test.ts`](file:///c:/Programming/Projects%20of%20antigravity/project_6_webdev_vinnovateit_websitechangedetector3/tests/integration/auth.test.ts), [`src/server/routes/subscriptions.ts`](file:///c:/Programming/Projects%20of%20antigravity/project_6_webdev_vinnovateit_websitechangedetector3/src/server/routes/subscriptions.ts) |
 | E | MUST | robots.txt honored per origin (http vs https separate), Allow/Disallow precedence, 4xx = allow, 5xx = disallow-for-now, raw body + headers cached 24 h | Unit tests | NOT TESTED | |
 | F | MUST | One navigation per domain at a time; minimum gap enforced | Fake-timer test | NOT TESTED | |
-| H | MUST | OK / ERROR / BLOCKED classification (503, 404, timeout, 403, 429, CAPTCHA, empty) | Unit + fixture tests | NOT TESTED | |
+| H | MUST | OK / ERROR / BLOCKED classification (503, 404, timeout, 403, 429, CAPTCHA, empty) | Unit + fixture tests | PASS | [`tests/unit/classifier.test.ts`](file:///c:/Programming/Projects%20of%20antigravity/project_6_webdev_vinnovateit_websitechangedetector3/tests/unit/classifier.test.ts), [`tests/integration/capture.test.ts`](file:///c:/Programming/Projects%20of%20antigravity/project_6_webdev_vinnovateit_websitechangedetector3/tests/integration/capture.test.ts) |
 | I | MUST | ERROR/BLOCKED leave baseline, pending state and versions untouched | Integration test | NOT TESTED | |
 | J | MUST | DOWN alert after `OUTAGE_THRESHOLD` failed jobs; RECOVERED alert on next OK | Integration test | NOT TESTED | |
 | K | MUST | SHA-256 hash stable for identical normalized text | Unit test | NOT TESTED | |
@@ -215,7 +215,7 @@ changewatch/
 | U | MUST | Picker generates selectors; Watch/Ignore saved and honored by checks | Browser walkthrough + integration test | NOT TESTED | |
 | V | MUST | Outbox states truthful (SENT_EXTERNAL only on provider 2xx; PENDING_CONFIG; RECORDED_IN_APP; RETRYING; FAILED) | Mocked-provider tests | NOT TESTED | |
 | W | MUST | Duplicate alert suppressed by idempotency key; channels deliver independently | Unit test | NOT TESTED | |
-| Y | MUST | Demo server fixtures 1–16 all selectable from the Test Rig | Browser walkthrough | NOT TESTED | |
+| Y | MUST | Demo server fixtures 1–16 all selectable from the Test Rig | Browser walkthrough | PASS | [`src/server/demo/demoServer.ts`](file:///c:/Programming/Projects%20of%20antigravity/project_6_webdev_vinnovateit_websitechangedetector3/src/server/demo/demoServer.ts), [`tests/integration/capture.test.ts`](file:///c:/Programming/Projects%20of%20antigravity/project_6_webdev_vinnovateit_websitechangedetector3/tests/integration/capture.test.ts) |
 | AA | MUST | Only due subscriptions are evaluated and advanced in a shared capture | Integration test | NOT TESTED | |
 | AB | MUST | Different capture fingerprints on the same URL cause separate captures | Integration test | NOT TESTED | |
 | AF | MUST | Omitted defaults, explicit defaults, and reordered keys give identical fingerprints | Unit test | PASS | [`tests/unit/captureConfig.test.ts`](file:///c:/Programming/Projects%20of%20antigravity/project_6_webdev_vinnovateit_websitechangedetector3/tests/unit/captureConfig.test.ts) |
@@ -244,3 +244,4 @@ changewatch/
 | Phase 1 | Phase 1 | Foundation, database, auth & subscription CRUD implemented | All unit & integration tests pass |
 | Phase 1 | Phase 1 | Diagnosed & resolved verification hang | Fixed missing `env` import in `middleware.ts`, added `-UseBasicParsing` & 10s timeout in PowerShell script |
 | Phase 1 | Phase 1 | Executed end-to-end API & Playwright UI verification | API verification passed; captured `login-ui.png` and `login-autofilled.png` |
+| Phase 2 | Phase 2 | Secure capture, classifier & 16 demo server fixtures | All 36 tests passed; SSRF guard, Playwright route interception, screenshots saved to `docs/evidence/phase-2/` |
