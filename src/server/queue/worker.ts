@@ -7,6 +7,7 @@ import { atomicClaimJob, heartbeatJob, startJob, completeJob, failOrRetryJob, re
 import { capturePage } from '../capture/playwrightCapture.js';
 import { CaptureConfigSchema } from '../capture/captureConfig.js';
 import { classifyCheck } from '../capture/classifier.js';
+import { evaluateSubscriptionChange } from '../engine/changeDetector.js';
 
 export interface WorkerCandidateRow {
   id: string;
@@ -25,10 +26,14 @@ interface SubscriptionRow {
   capture_config: string;
   capture_fingerprint: string;
   next_check_at: string;
+  include_selectors: string;
+  ignore_selectors: string;
 }
 
 interface ObservationRow {
   id: string;
+  sanitized_dom: string;
+  raw_text: string;
   captured_at: string;
 }
 
@@ -180,7 +185,8 @@ export class WorkerPool {
       // 2. Due-only evaluation (Acceptance Matrix AA)
       const nowIso = new Date().toISOString();
       const dueSubs = this.db.prepare(`
-        SELECT id, target_id, interval_minutes, capture_config, capture_fingerprint, next_check_at
+        SELECT id, target_id, interval_minutes, capture_config, capture_fingerprint,
+               next_check_at, include_selectors, ignore_selectors
         FROM subscriptions
         WHERE target_id = ? AND capture_fingerprint = ? AND is_paused = 0 AND next_check_at <= ?
       `).all(targetId, fingerprint, nowIso) as SubscriptionRow[];
@@ -193,14 +199,14 @@ export class WorkerPool {
       // 3. Shared capture reuse window (Acceptance Matrix S, 15s TTL)
       const reuseCutoff = new Date(Date.now() - env.SHARED_CAPTURE_TTL_MS).toISOString();
       const existingObs = this.db.prepare(`
-        SELECT id, captured_at FROM observations
+        SELECT id, sanitized_dom, raw_text, captured_at FROM observations
         WHERE target_id = ? AND capture_fingerprint = ? AND captured_at >= ?
         ORDER BY captured_at DESC LIMIT 1
       `).get(targetId, fingerprint, reuseCutoff) as ObservationRow | undefined;
 
       if (existingObs) {
         // Reuse cached capture
-        this.processOkOutcome(dueSubs, jobId, targetId, 0, true);
+        this.processOkOutcome(dueSubs, jobId, targetId, 0, true, existingObs);
         return;
       }
 
@@ -236,7 +242,14 @@ export class WorkerPool {
         this.db.prepare('UPDATE targets SET last_fetched_at = ?, last_fetch_outcome = ? WHERE id = ?')
           .run(capturedAt, 'OK', targetId);
 
-        this.processOkOutcome(dueSubs, jobId, targetId, durationMs, false);
+        const newObs: ObservationRow = {
+          id: captureResult.observationId,
+          sanitized_dom: captureResult.sanitizedDom,
+          raw_text: captureResult.rawText,
+          captured_at: capturedAt,
+        };
+
+        this.processOkOutcome(dueSubs, jobId, targetId, durationMs, false, newObs);
       } else {
         await this.handleFailedCapture(
           dueSubs, jobId, targetId, classification.outcome, classification.reason,
@@ -268,9 +281,12 @@ export class WorkerPool {
     jobId: string,
     targetId: string,
     durationMs: number,
-    wasDeduplicated: boolean
+    wasDeduplicated: boolean,
+    observation: ObservationRow
   ): void {
     for (const sub of dueSubs) {
+      evaluateSubscriptionChange(this.db, sub, observation);
+
       recordCheckRun(this.db, sub.id, targetId, jobId, 'OK', null, 200, durationMs, wasDeduplicated);
       this.db.prepare('UPDATE sub_state SET consecutive_failures = 0 WHERE subscription_id = ?').run(sub.id);
 

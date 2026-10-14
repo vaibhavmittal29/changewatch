@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+import dns from 'node:dns/promises';
 import { isPublicIp, validateUrl } from '../../src/server/capture/validateUrl.js';
 
 describe('validateUrl & SSRF Protection (Criterion B)', () => {
@@ -70,10 +71,13 @@ describe('validateUrl & SSRF Protection (Criterion B)', () => {
     });
 
     it('accepts valid public domain on port 80/443', async () => {
+      vi.spyOn(dns, 'lookup').mockImplementation(async () => [
+        { address: '93.184.216.34', family: 4 }
+      ] as never);
       const result = await validateUrl('https://example.com/path?query=1#ignored');
       expect(result.canonicalUrl).toBe('https://example.com/path?query=1');
       expect(result.hostname).toBe('example.com');
-      expect(result.resolvedIps.length).toBeGreaterThan(0);
+      expect(result.resolvedIps).toEqual(['93.184.216.34']);
       expect(result.isDemoOrigin).toBe(false);
     });
 

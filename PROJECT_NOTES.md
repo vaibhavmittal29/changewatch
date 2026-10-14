@@ -1,8 +1,8 @@
 # ChangeWatch — Project Notes
 
 **Single Source of Truth Plan:** [`docs/implementation_plan.md`](./docs/implementation_plan.md)  
-**Current Phase:** Phase 3 (Durable queue, scheduler, and politeness) — COMPLETED  
-**Last Updated:** Phase 3 Complete (All 54 tests passing, evidence captured in docs/evidence/phase-3/)
+**Current Phase:** Phase 4 (Hashing, baseline and version history) — COMPLETED  
+**Last Updated:** Phase 4 Complete (All 62 tests passing across 11 suites, evidence captured in docs/evidence/phase-4/)
 
 ---
 
@@ -202,11 +202,11 @@ changewatch/
 | E | MUST | robots.txt honored per origin (http vs https separate), Allow/Disallow precedence, 4xx = allow, 5xx = disallow-for-now, raw body + headers cached 24 h | Unit tests | PASS | [`tests/unit/robots.test.ts`](file:///c:/Programming/Projects%20of%20antigravity/project_6_webdev_vinnovateit_websitechangedetector3/tests/unit/robots.test.ts), [`docs/evidence/phase-3/test-results.txt`](file:///c:/Programming/Projects%20of%20antigravity/project_6_webdev_vinnovateit_websitechangedetector3/docs/evidence/phase-3/test-results.txt) |
 | F | MUST | One navigation per domain at a time; minimum gap enforced | Fake-timer test | PASS | [`tests/unit/politeness.test.ts`](file:///c:/Programming/Projects%20of%20antigravity/project_6_webdev_vinnovateit_websitechangedetector3/tests/unit/politeness.test.ts), [`docs/evidence/phase-3/test-results.txt`](file:///c:/Programming/Projects%20of%20antigravity/project_6_webdev_vinnovateit_websitechangedetector3/docs/evidence/phase-3/test-results.txt) |
 | H | MUST | OK / ERROR / BLOCKED classification (503, 404, timeout, 403, 429, CAPTCHA, empty) | Unit + fixture tests | PASS | [`tests/unit/classifier.test.ts`](file:///c:/Programming/Projects%20of%20antigravity/project_6_webdev_vinnovateit_websitechangedetector3/tests/unit/classifier.test.ts), [`tests/integration/capture.test.ts`](file:///c:/Programming/Projects%20of%20antigravity/project_6_webdev_vinnovateit_websitechangedetector3/tests/integration/capture.test.ts) |
-| I | MUST | ERROR/BLOCKED leave baseline, pending state and versions untouched | Integration test | NOT TESTED | |
+| I | MUST | ERROR/BLOCKED leave baseline, pending state and versions untouched | Integration test | PASS | [`tests/integration/changeDetector.test.ts`](file:///c:/Programming/Projects%20of%20antigravity/project_6_webdev_vinnovateit_websitechangedetector3/tests/integration/changeDetector.test.ts), [`docs/evidence/phase-4/test-results.txt`](file:///c:/Programming/Projects%20of%20antigravity/project_6_webdev_vinnovateit_websitechangedetector3/docs/evidence/phase-4/test-results.txt) |
 | J | MUST | DOWN alert after `OUTAGE_THRESHOLD` failed jobs; RECOVERED alert on next OK | Integration test | NOT TESTED | |
-| K | MUST | SHA-256 hash stable for identical normalized text | Unit test | NOT TESTED | |
-| L | MUST | Stable page: 5 checks create exactly 1 version (baseline) | Integration test | NOT TESTED | |
-| M | MUST | Headline change creates version 2 after confirmation | Integration test | NOT TESTED | |
+| K | MUST | SHA-256 hash stable for identical normalized text | Unit test | PASS | [`tests/unit/normalize.test.ts`](file:///c:/Programming/Projects%20of%20antigravity/project_6_webdev_vinnovateit_websitechangedetector3/tests/unit/normalize.test.ts), [`docs/evidence/phase-4/test-results.txt`](file:///c:/Programming/Projects%20of%20antigravity/project_6_webdev_vinnovateit_websitechangedetector3/docs/evidence/phase-4/test-results.txt) |
+| L | MUST | Stable page: 5 checks create exactly 1 version (baseline) | Integration test | PASS | [`tests/integration/changeDetector.test.ts`](file:///c:/Programming/Projects%20of%20antigravity/project_6_webdev_vinnovateit_websitechangedetector3/tests/integration/changeDetector.test.ts), [`docs/evidence/phase-4/test-results.txt`](file:///c:/Programming/Projects%20of%20antigravity/project_6_webdev_vinnovateit_websitechangedetector3/docs/evidence/phase-4/test-results.txt) |
+| M | MUST | Headline change creates version 2 after confirmation | Integration test | PASS | [`tests/integration/changeDetector.test.ts`](file:///c:/Programming/Projects%20of%20antigravity/project_6_webdev_vinnovateit_websitechangedetector3/tests/integration/changeDetector.test.ts), [`docs/evidence/phase-4/test-results.txt`](file:///c:/Programming/Projects%20of%20antigravity/project_6_webdev_vinnovateit_websitechangedetector3/docs/evidence/phase-4/test-results.txt) |
 | N | MUST | Timestamp, counter, token filters; clock/counter/token fixtures produce no alert | Unit + fixture tests | NOT TESTED | |
 | P | MUST | Candidate needs 2 consecutive matching checks; re-check scheduled after `CONFIRM_DELAY`, not the full interval; flip-back discards candidate | Integration test | NOT TESTED | |
 | R | MUST | Expired job leases recovered on startup; no job lost or double-run | Crash-recovery test | PASS | [`tests/integration/queue.test.ts`](file:///c:/Programming/Projects%20of%20antigravity/project_6_webdev_vinnovateit_websitechangedetector3/tests/integration/queue.test.ts), [`docs/evidence/phase-3/test-results.txt`](file:///c:/Programming/Projects%20of%20antigravity/project_6_webdev_vinnovateit_websitechangedetector3/docs/evidence/phase-3/test-results.txt) |
@@ -246,4 +246,5 @@ changewatch/
 | Phase 1 | Phase 1 | Executed end-to-end API & Playwright UI verification | API verification passed; captured `login-ui.png` and `login-autofilled.png` |
 | Phase 2 | Phase 2 | Secure capture, classifier & 16 demo server fixtures | All 36 tests passed; SSRF guard, Playwright route interception, screenshots saved to `docs/evidence/phase-2/` |
 | Phase 3 | Phase 3 | Durable SQLite queue, politeness, robots cache & scheduler | All 54 tests passed; atomic claims, crash recovery, 10s domain gap, origin robots, due-only grouping verified |
+| Phase 4 | Phase 4 | Hashing, baseline Version 1, change detector & history | All 62 tests passed; 5 stable checks = 1 version, headline change = version 2, baseline protected on error, ON DELETE RESTRICT |
 
