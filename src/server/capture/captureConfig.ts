@@ -5,6 +5,7 @@ export const DEFAULT_UA = 'ChangeWatch/1.0 (+https://github.com/vaibhavmittal29/
 
 export const CaptureConfigSchema = z.object({
   engine: z.enum(['playwright', 'http_dom']).default('playwright'),
+  captureScreenshot: z.boolean().optional(),
   viewport: z.object({
     width: z.number().int().min(320).max(3840).default(1280),
     height: z.number().int().min(240).max(2160).default(720),
@@ -18,7 +19,20 @@ export const CaptureConfigSchema = z.object({
     waitForSelector: z.string().max(300).optional(),
     timeoutMs: z.number().int().min(1000).max(30000).default(10000),
   }).default({ timeoutMs: 10000 }),
-}).strict(); // unknown keys (e.g. customHeaders, cookies) are REJECTED
+}).strict()
+.superRefine((data, ctx) => {
+  if (data.engine === 'http_dom' && data.captureScreenshot === true) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Screenshots require 'playwright' engine; 'http_dom' does not support screenshot capture. Set captureScreenshot to false or use engine 'playwright'.",
+      path: ['captureScreenshot'],
+    });
+  }
+})
+.transform((data) => ({
+  ...data,
+  captureScreenshot: data.captureScreenshot ?? (data.engine === 'playwright'),
+}));
 
 export type CaptureConfig = z.infer<typeof CaptureConfigSchema>;
 

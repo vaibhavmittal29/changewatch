@@ -42,57 +42,34 @@ export interface CaptureResult {
   isTimeout?: boolean;
 }
 
-const TRACKER_DOMAINS = [
-  'google-analytics.com', 'googletagmanager.com', 'doubleclick.net',
-  'facebook.net', 'adnxs.com', 'criteo.com', 'hotjar.com'
-];
+const TRACKER_DOMAINS = ['google-analytics.com', 'googletagmanager.com', 'doubleclick.net', 'facebook.net', 'adnxs.com', 'criteo.com', 'hotjar.com'];
 
 async function isSafeRouteHost(host: string, port: number, isDemo: boolean): Promise<boolean> {
   if (isDemo) return true;
   const h = host.toLowerCase();
   if (h === 'localhost' || h.endsWith('.localhost') || h.endsWith('.local') ||
       h.endsWith('.internal') || h.endsWith('.lan') || h.endsWith('.arpa') ||
-      h.endsWith('.test') || h.endsWith('.example')) {
-    return false;
-  }
+      h.endsWith('.test') || h.endsWith('.example')) return false;
   if (port !== 80 && port !== 443) return false;
-  if (/^\d+\.\d+\.\d+\.\d+$/.test(h) || h.includes(':')) {
-    return isPublicIp(h);
-  }
+  if (/^\d+\.\d+\.\d+\.\d+$/.test(h) || h.includes(':')) return isPublicIp(h);
   try {
     const records = await dns.lookup(h, { all: true });
-    if (!records || records.length === 0) return false;
-    return records.every(r => isPublicIp(r.address));
+    return Boolean(records && records.length > 0 && records.every(r => isPublicIp(r.address)));
   } catch {
     return false;
   }
 }
 
-/**
- * Headless Playwright capture engine:
- * - Route interception (SSRF protection, aborts heavy media/trackers, closes WebSockets)
- * - Service workers blocked
- * - Full-page PNG screenshot of rendered page with styles intact
- * - In-page hidden element extraction while computed styles active, then sanitization
- */
-export async function capturePage(
-  targetUrl: string,
-  config: CaptureConfig,
-  observationId?: string
-): Promise<CaptureResult> {
+export async function capturePage(targetUrl: string, config: CaptureConfig, observationId?: string): Promise<CaptureResult> {
   const startTime = Date.now();
   const obsId = observationId || crypto.randomUUID();
   const browser = await getBrowser();
 
   const context = await browser.newContext({
-    viewport: config.viewport,
-    deviceScaleFactor: config.deviceScaleFactor,
-    javaScriptEnabled: config.jsEnabled,
-    userAgent: config.userAgent,
-    locale: config.locale,
-    timezoneId: config.timezone,
-    serviceWorkers: 'block',
-    acceptDownloads: false,
+    viewport: config.viewport, deviceScaleFactor: config.deviceScaleFactor,
+    javaScriptEnabled: config.jsEnabled, userAgent: config.userAgent,
+    locale: config.locale, timezoneId: config.timezone,
+    serviceWorkers: 'block', acceptDownloads: false,
   });
 
   const page = await context.newPage();
@@ -193,14 +170,16 @@ export async function capturePage(
 
     // 4. Capture screenshot FIRST while styles, fonts, and layout are intact
     let screenshotPath: string | null = null;
-    try {
-      const screenshotsDir = path.join(env.DATA_DIR, 'screenshots');
-      if (!fs.existsSync(screenshotsDir)) fs.mkdirSync(screenshotsDir, { recursive: true });
-      const fullPath = path.join(screenshotsDir, `${obsId}.png`);
-      await page.screenshot({ path: fullPath, fullPage: true });
-      screenshotPath = fullPath;
-    } catch (ssErr) {
-      console.warn(`[capturePage] Screenshot capture failed for ${obsId}:`, ssErr);
+    if (config.captureScreenshot) {
+      try {
+        const screenshotsDir = path.join(env.DATA_DIR, 'screenshots');
+        if (!fs.existsSync(screenshotsDir)) fs.mkdirSync(screenshotsDir, { recursive: true });
+        const fullPath = path.join(screenshotsDir, `${obsId}.png`);
+        await page.screenshot({ path: fullPath, fullPage: true });
+        screenshotPath = fullPath;
+      } catch (ssErr) {
+        console.warn(`[capturePage] Screenshot capture failed for ${obsId}:`, ssErr);
+      }
     }
 
     // 5. In-page DOM sanitization: remove hidden elements while computed styles are intact

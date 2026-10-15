@@ -17,6 +17,7 @@ export const AddMonitorModal: React.FC<AddMonitorModalProps> = ({
   const [name, setName] = useState('');
   const [intervalMinutes, setIntervalMinutes] = useState(60);
   const [sensitivity, setSensitivity] = useState<'low' | 'balanced' | 'high'>('balanced');
+  const [engine, setEngine] = useState<'playwright' | 'http_dom'>('playwright');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [includeSelectors, setIncludeSelectors] = useState('');
   const [ignoreSelectors, setIgnoreSelectors] = useState('');
@@ -39,6 +40,7 @@ export const AddMonitorModal: React.FC<AddMonitorModalProps> = ({
         name: name.trim() || new URL(url.trim()).hostname,
         interval_minutes: Number(intervalMinutes),
         sensitivity,
+        capture_config: { engine, captureScreenshot: engine === 'playwright' },
         include_selectors: includeSelectors ? includeSelectors.split('\n').map(s => s.trim()).filter(Boolean) : [],
         ignore_selectors: ignoreSelectors ? ignoreSelectors.split('\n').map(s => s.trim()).filter(Boolean) : [],
         noise_filters: { timestamps: filterTimestamps, counters: filterCounters, tokens: filterTokens },
@@ -122,38 +124,32 @@ export const AddMonitorModal: React.FC<AddMonitorModalProps> = ({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                Check Interval
-              </label>
-              <select
-                value={intervalMinutes}
-                onChange={e => setIntervalMinutes(Number(e.target.value))}
-                className="w-full px-3 py-2.5 bg-slate-950 border border-slate-700/80 rounded-xl text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 cursor-pointer"
-              >
-                <option value={1}>1 minute (Demo mode)</option>
-                <option value={15}>Every 15 minutes</option>
-                <option value={30}>Every 30 minutes</option>
-                <option value={60}>Every 1 hour</option>
-                <option value={360}>Every 6 hours</option>
-                <option value={720}>Every 12 hours</option>
-                <option value={1440}>Every 24 hours</option>
+              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Interval</label>
+              <select value={intervalMinutes} onChange={e => setIntervalMinutes(Number(e.target.value))} className="w-full px-2.5 py-2.5 bg-slate-950 border border-slate-700/80 rounded-xl text-xs text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 cursor-pointer">
+                <option value={1}>1m (Demo)</option>
+                <option value={15}>15 mins</option>
+                <option value={30}>30 mins</option>
+                <option value={60}>1 hour</option>
+                <option value={360}>6 hours</option>
+                <option value={720}>12 hours</option>
+                <option value={1440}>24 hours</option>
               </select>
             </div>
-
             <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                Sensitivity
-              </label>
-              <select
-                value={sensitivity}
-                onChange={e => setSensitivity(e.target.value as 'low' | 'balanced' | 'high')}
-                className="w-full px-3 py-2.5 bg-slate-950 border border-slate-700/80 rounded-xl text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 cursor-pointer"
-              >
-                <option value="high">High (Any line change)</option>
-                <option value="balanced">Balanced (&gt;= 5% change)</option>
-                <option value="low">Low (&gt;= 20% change)</option>
+              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Sensitivity</label>
+              <select value={sensitivity} onChange={e => setSensitivity(e.target.value as 'low' | 'balanced' | 'high')} className="w-full px-2.5 py-2.5 bg-slate-950 border border-slate-700/80 rounded-xl text-xs text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 cursor-pointer">
+                <option value="high">High (Any)</option>
+                <option value="balanced">Balanced (&gt;=5%)</option>
+                <option value="low">Low (&gt;=20%)</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Engine</label>
+              <select value={engine} onChange={e => setEngine(e.target.value as 'playwright' | 'http_dom')} className="w-full px-2.5 py-2.5 bg-slate-950 border border-slate-700/80 rounded-xl text-xs text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 cursor-pointer">
+                <option value="playwright">Playwright (Visual)</option>
+                <option value="http_dom">HTTP DOM (Fast)</option>
               </select>
             </div>
           </div>

@@ -18,6 +18,10 @@ export async function captureHttpDom(
   const startTime = Date.now();
   const obsId = observationId || crypto.randomUUID();
 
+  if (_config.captureScreenshot) {
+    throw new Error("Invalid capture configuration: 'http_dom' engine cannot capture screenshots");
+  }
+
   try {
     const fetchRes = await safeFetch(targetUrl, { timeoutMs: 15000, maxBytes: 1.5 * 1024 * 1024 });
 
