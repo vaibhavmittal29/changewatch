@@ -5,6 +5,7 @@ import { politeness } from './politeness.js';
 import { checkRobotsPermission } from './robots.js';
 import { atomicClaimJob, heartbeatJob, startJob, completeJob, recoverExpiredLeases } from './jobs.js';
 import { capturePage } from '../capture/playwrightCapture.js';
+import { captureHttpDom } from '../capture/httpDomCapture.js';
 import { CaptureConfigSchema } from '../capture/captureConfig.js';
 import { classifyCheck } from '../capture/classifier.js';
 import {
@@ -151,7 +152,7 @@ export class WorkerPool {
       const dueSubs = this.db.prepare(`
         SELECT id, target_id, interval_minutes, capture_config, capture_fingerprint,
                next_check_at, include_selectors, ignore_selectors, sensitivity,
-               noise_filters, learned_ignore_patterns
+               noise_filters, learned_ignore_patterns, keyword_rules
         FROM subscriptions
         WHERE target_id = ? AND capture_fingerprint = ? AND is_paused = 0 AND next_check_at <= ?
       `).all(targetId, fingerprint, nowIso) as SubscriptionRow[];
@@ -174,10 +175,12 @@ export class WorkerPool {
         return;
       }
 
-      // 4. Capture with Playwright
+      // 4. Capture with Playwright or Cheerio http_dom
       const startTime = Date.now();
       const config = CaptureConfigSchema.parse(JSON.parse(dueSubs[0].capture_config));
-      const captureResult = await capturePage(canonicalUrl, config);
+      const captureResult = config.engine === 'http_dom'
+        ? await captureHttpDom(canonicalUrl, config)
+        : await capturePage(canonicalUrl, config);
       const durationMs = Date.now() - startTime;
 
       const classification = classifyCheck({
@@ -195,12 +198,13 @@ export class WorkerPool {
         this.db.prepare(`
           INSERT INTO observations (
             id, target_id, capture_fingerprint, engine_used, final_url,
-            http_status, sanitized_dom, raw_text, screenshot_path, subresource_count, captured_at
-          ) VALUES (?, ?, ?, 'playwright', ?, ?, ?, ?, ?, ?, ?)
+            http_status, sanitized_dom, raw_text, screenshot_path,
+            subresource_count, top_level_navigations, captured_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).run(
-          captureResult.observationId, targetId, fingerprint, captureResult.finalUrl,
+          captureResult.observationId, targetId, fingerprint, config.engine, captureResult.finalUrl,
           captureResult.httpStatus, captureResult.sanitizedDom, captureResult.rawText, captureResult.screenshotPath,
-          captureResult.subresourceCount, capturedAt
+          captureResult.subresourceCount, captureResult.topLevelNavigations, capturedAt
         );
 
         this.db.prepare('UPDATE targets SET last_fetched_at = ?, last_fetch_outcome = ? WHERE id = ?')

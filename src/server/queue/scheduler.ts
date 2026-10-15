@@ -1,6 +1,8 @@
 import type { Database } from 'better-sqlite3';
 import { env } from '../config.js';
 import { enqueueCheckJob } from './jobs.js';
+import { processDailyDigest } from '../notifications/digest.js';
+import { runRetentionCleanup } from '../maintenance/cleanup.js';
 
 export interface SchedulerTickResult {
   dueGroupsCount: number;
@@ -51,19 +53,34 @@ export function schedulerTick(
 export class Scheduler {
   private timer: NodeJS.Timeout | null = null;
   private isRunning = false;
+  private lastDailyRunDate: string | null = null;
 
   constructor(
     private readonly db: Database,
     private readonly tickIntervalMs: number = env.TICK_MS
   ) {}
 
+  public checkDailyTasks(now: Date = new Date()): void {
+    const todayDate = now.toISOString().slice(0, 10);
+    if (now.getUTCHours() === env.DIGEST_HOUR && this.lastDailyRunDate !== todayDate) {
+      this.lastDailyRunDate = todayDate;
+      try {
+        processDailyDigest(this.db, todayDate);
+        runRetentionCleanup(env.OBSERVATION_RETENTION_DAYS);
+      } catch (err) {
+        console.error('[SCHEDULER] Daily digest/retention error:', err);
+      }
+    }
+  }
+
   public start(): void {
     if (this.isRunning) return;
     this.isRunning = true;
 
-    // Run immediate tick on start
+    // Run immediate tick and daily checks on start
     try {
       schedulerTick(this.db);
+      this.checkDailyTasks();
     } catch (err) {
       console.error('[SCHEDULER] Initial tick error:', err);
     }
@@ -71,6 +88,7 @@ export class Scheduler {
     this.timer = setInterval(() => {
       try {
         schedulerTick(this.db);
+        this.checkDailyTasks();
       } catch (err) {
         console.error('[SCHEDULER] Periodic tick error:', err);
       }

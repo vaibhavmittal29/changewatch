@@ -170,7 +170,12 @@ subscriptionsRouter.patch('/:id', (req, res) => {
   const { id } = req.params;
   const db = getDb();
   const userId = req.user!.id;
-  const existing = db.prepare('SELECT * FROM subscriptions WHERE id = ? AND user_id = ?').get(id, userId) as { capture_config?: string; capture_fingerprint?: string } | undefined;
+  const existing = db.prepare('SELECT * FROM subscriptions WHERE id = ? AND user_id = ?').get(id, userId) as {
+    target_id: string;
+    capture_config?: string;
+    capture_fingerprint?: string;
+    noise_filters?: string;
+  } | undefined;
   if (!existing) { res.status(404).json({ error: 'Subscription not found' }); return; }
 
   const parsed = UpdateSubscriptionSchema.safeParse(req.body);

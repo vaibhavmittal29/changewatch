@@ -70,6 +70,7 @@ CREATE TABLE IF NOT EXISTS observations (
   raw_text TEXT NOT NULL,
   screenshot_path TEXT,
   subresource_count INTEGER NOT NULL DEFAULT 0,
+  top_level_navigations INTEGER NOT NULL DEFAULT 1,
   captured_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_obs_lookup ON observations(target_id, capture_fingerprint, captured_at);

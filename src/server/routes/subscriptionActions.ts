@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { getDb } from '../db/index.js';
 import { enqueueCheckJob } from '../queue/jobs.js';
+import { CaptureConfigSchema } from '../capture/captureConfig.js';
+import { probeTargetVolatility } from '../engine/volatility.js';
 
 export const subscriptionActionsRouter = Router();
 
@@ -128,4 +130,59 @@ subscriptionActionsRouter.get('/subscriptions/:id/timeline', (req, res) => {
     events,
     recent_checks,
   });
+});
+
+// POST /api/subscriptions/:id/probe
+subscriptionActionsRouter.post('/subscriptions/:id/probe', async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user!.id;
+  const db = getDb();
+
+  const sub = db.prepare(`
+    SELECT s.id, s.capture_config, t.canonical_url
+    FROM subscriptions s
+    JOIN targets t ON t.id = s.target_id
+    WHERE s.id = ? AND s.user_id = ?
+  `).get(id, userId) as { id: string; capture_config: string; canonical_url: string } | undefined;
+
+  if (!sub) {
+    res.status(404).json({ error: 'Subscription not found' });
+    return;
+  }
+
+  try {
+    const config = CaptureConfigSchema.parse(JSON.parse(sub.capture_config || '{}'));
+    const probeResult = await probeTargetVolatility(sub.canonical_url, config, 1000);
+    res.json({ ok: true, ...probeResult });
+  } catch (err: unknown) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+// POST /api/subscriptions/:id/approve-patterns
+subscriptionActionsRouter.post('/subscriptions/:id/approve-patterns', (req, res) => {
+  const { id } = req.params;
+  const userId = req.user!.id;
+  const db = getDb();
+  const patterns = Array.isArray(req.body?.patterns) ? req.body.patterns : [];
+
+  const sub = db.prepare(`
+    SELECT id, learned_ignore_patterns
+    FROM subscriptions
+    WHERE id = ? AND user_id = ?
+  `).get(id, userId) as { id: string; learned_ignore_patterns: string } | undefined;
+
+  if (!sub) {
+    res.status(404).json({ error: 'Subscription not found' });
+    return;
+  }
+
+  let existing: string[] = [];
+  try { existing = JSON.parse(sub.learned_ignore_patterns || '[]'); } catch {}
+  const merged = Array.from(new Set([...existing, ...patterns]));
+
+  db.prepare('UPDATE subscriptions SET learned_ignore_patterns = ? WHERE id = ?')
+    .run(JSON.stringify(merged), id);
+
+  res.json({ ok: true, learned_ignore_patterns: merged });
 });

@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto';
 export const DEFAULT_UA = 'ChangeWatch/1.0 (+https://github.com/vaibhavmittal29/changewatch; contact: vaibhavmittalwork@gmail.com)';
 
 export const CaptureConfigSchema = z.object({
-  engine: z.literal('playwright').default('playwright'),   // 'http_dom' is STRETCH
+  engine: z.enum(['playwright', 'http_dom']).default('playwright'),
   viewport: z.object({
     width: z.number().int().min(320).max(3840).default(1280),
     height: z.number().int().min(240).max(2160).default(720),

@@ -11,6 +11,7 @@ import { dashboardRouter } from './routes/dashboard.js';
 import { subscriptionActionsRouter } from './routes/subscriptionActions.js';
 import { demoRouter } from './routes/demo.js';
 import { pickerRouter } from './routes/picker.js';
+import { stretchRouter } from './routes/stretchFeatures.js';
 
 export function createApp() {
   const app = express();
@@ -31,6 +32,9 @@ export function createApp() {
 
   // CSRF validation on all subsequent state-changing routes
   app.use('/api', verifyCsrf);
+
+  // Stretch routes (includes public RSS feed and protected numeric-history)
+  app.use('/api', stretchRouter);
 
   // Authenticated API routes
   app.use('/api/subscriptions', requireAuth, subscriptionsRouter);

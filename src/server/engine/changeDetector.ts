@@ -16,6 +16,7 @@ export interface SubscriptionRecord {
   ignore_selectors: string;
   noise_filters: string;
   learned_ignore_patterns: string;
+  keyword_rules?: string;
 }
 
 export interface ObservationRecord {
@@ -113,11 +114,9 @@ export function evaluateSubscriptionChange(
 ): DecisionResult {
   const nowIso = new Date(nowMs).toISOString();
 
-  const safeParse = <T>(val: string, fallback: T): T => { try { return JSON.parse(val) as T; } catch { return fallback; } };
-  const inc = safeParse<string[]>(sub.include_selectors, []);
-  const ign = safeParse<string[]>(sub.ignore_selectors, []);
-  const filters = safeParse<NoiseFilterConfig>(sub.noise_filters, {});
-  const learned = safeParse<string[]>(sub.learned_ignore_patterns, []);
+  const parseJson = <T>(v: string, fb: T): T => { try { return JSON.parse(v) as T; } catch { return fb; } };
+  const inc = parseJson<string[]>(sub.include_selectors, []), ign = parseJson<string[]>(sub.ignore_selectors, []);
+  const filters = parseJson<NoiseFilterConfig>(sub.noise_filters, {}), learned = parseJson<string[]>(sub.learned_ignore_patterns, []);
 
   // 1. Single extraction contract + full normalizer
   const extracted = extractText(obs.sanitized_dom, inc, ign);
@@ -206,22 +205,28 @@ export function evaluateSubscriptionChange(
   // Same candidate hash seen consecutively (checks = 2): CONFIRMED!
   const newVersion = commitNextVersion(db, sub.id, obs.id, normalized, hash, diffResult.summary, nowIso);
 
-  // Check Cooldown (STRONG, Criterion Q)
+  // Check Cooldown (STRONG, Criterion Q) and Keyword-only alerts (STRETCH)
   const cooldownMs = env.COOLDOWN_HOURS * 3600 * 1000;
   const lastAlertTime = state.last_alert_sent_at ? new Date(state.last_alert_sent_at).getTime() : 0;
-  const isSuppressed = Boolean(state.last_alert_sent_at) && (nowMs - lastAlertTime) < cooldownMs;
+  const inCooldown = Boolean(state.last_alert_sent_at) && (nowMs - lastAlertTime) < cooldownMs;
+
+  const rules = parseJson<string[]>(sub.keyword_rules || '[]', []);
+  const keywordMatches = rules.filter(kw => normalized.toLowerCase().includes(kw.toLowerCase()));
+  const keywordSuppressed = rules.length > 0 && keywordMatches.length === 0;
+  const isSuppressed = inCooldown || keywordSuppressed;
+  const summaryText = keywordMatches.length > 0 ? `${diffResult.summary} (Matched: ${keywordMatches.join(', ')})` : diffResult.summary;
 
   const eventId = crypto.randomUUID();
   db.prepare(`
     INSERT INTO change_events (
       id, subscription_id, previous_version_id, current_version_id,
-      event_type, suppressed, summary, created_at
-    ) VALUES (?, ?, ?, ?, 'CHANGE', ?, ?, ?)
+      event_type, suppressed, keyword_matches, summary, created_at
+    ) VALUES (?, ?, ?, ?, 'CHANGE', ?, ?, ?, ?)
   `).run(
     eventId, sub.id, activeVersion.id, newVersion.id,
-    isSuppressed ? 1 : 0, diffResult.summary, nowIso
+    isSuppressed ? 1 : 0, JSON.stringify(keywordMatches), summaryText, nowIso
   );
-  enqueueNotificationForEvent(db, eventId);
+  if (!isSuppressed) enqueueNotificationForEvent(db, eventId);
 
   db.prepare(`
     UPDATE sub_state

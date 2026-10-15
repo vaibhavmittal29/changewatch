@@ -673,43 +673,43 @@ Each fixture is a route whose behavior the Test Rig can switch:
 
 | Ref | Tier | Requirement | How verified | Status | Evidence |
 |---|---|---|---|---|---|
-| A1 | MUST | Auth, sessions, ownership isolation (user B cannot read or edit user A's monitor) | Integration tests | NOT TESTED | |
-| A2 | MUST | CSRF header enforced; destination secrets masked in API and logs | Integration test + payload audit | NOT TESTED | |
-| B | MUST | SSRF: loopback, private, link-local, metadata, IPv6 ranges, IPv4-mapped IPv6, credentials in URL, bad ports all rejected; redirects re-validated | Unit + integration tests | NOT TESTED | |
-| C | MUST | Browser interception: disallowed subresource aborted, WebSocket closed, service workers blocked | Playwright integration test | NOT TESTED | |
-| D | MUST | Interval 15–1440 enforced; `next_check_at` set and advanced with ±10% jitter; dev override only for demo origin | Unit + integration tests | NOT TESTED | |
-| E | MUST | robots.txt honored per origin (http vs https separate), Allow/Disallow precedence, 4xx = allow, 5xx = disallow-for-now, raw body + headers cached 24 h | Unit tests | NOT TESTED | |
-| F | MUST | One navigation per domain at a time; minimum gap enforced | Fake-timer test | NOT TESTED | |
-| H | MUST | OK / ERROR / BLOCKED classification (503, 404, timeout, 403, 429, CAPTCHA, empty) | Unit + fixture tests | NOT TESTED | |
-| I | MUST | ERROR/BLOCKED leave baseline, pending state and versions untouched | Integration test | NOT TESTED | |
-| J | MUST | DOWN alert after `OUTAGE_THRESHOLD` failed jobs; RECOVERED alert on next OK | Integration test | NOT TESTED | |
-| K | MUST | SHA-256 hash stable for identical normalized text | Unit test | NOT TESTED | |
-| L | MUST | Stable page: 5 checks create exactly 1 version (baseline) | Integration test | NOT TESTED | |
-| M | MUST | Headline change creates version 2 after confirmation | Integration test | NOT TESTED | |
-| N | MUST | Timestamp, counter, token filters; clock/counter/token fixtures produce no alert | Unit + fixture tests | NOT TESTED | |
-| P | MUST | Candidate needs 2 consecutive matching checks; re-check scheduled after `CONFIRM_DELAY`, not the full interval; flip-back discards candidate | Integration test | NOT TESTED | |
-| R | MUST | Expired job leases recovered on startup; no job lost or double-run | Crash-recovery test | NOT TESTED | |
-| S | MUST | N compatible due subscriptions on one URL cause exactly 1 top-level navigation per cycle (N=20 MUST, N=200 STRONG) | Benchmark script | NOT TESTED | |
-| T | MUST | Text diff (added/removed) and screenshot diff (changed-pixel %) correct on fixtures | Unit + browser check | NOT TESTED | |
-| U | MUST | Picker generates selectors; Watch/Ignore saved and honored by checks | Browser walkthrough + integration test | NOT TESTED | |
-| V | MUST | Outbox states truthful (SENT_EXTERNAL only on provider 2xx; PENDING_CONFIG; RECORDED_IN_APP; RETRYING; FAILED) | Mocked-provider tests | NOT TESTED | |
-| W | MUST | Duplicate alert suppressed by idempotency key; channels deliver independently | Unit test | NOT TESTED | |
-| Y | MUST | Demo server fixtures 1–16 all selectable from the Test Rig | Browser walkthrough | NOT TESTED | |
-| AA | MUST | Only due subscriptions are evaluated and advanced in a shared capture | Integration test | NOT TESTED | |
-| AB | MUST | Different capture fingerprints on the same URL cause separate captures | Integration test | NOT TESTED | |
-| AF | MUST | Omitted defaults, explicit defaults, and reordered keys give identical fingerprints | Unit test | NOT TESTED | |
-| AG | MUST | Material config changes give different fingerprints | Unit test | NOT TESTED | |
-| AI | MUST | Capture config rejects unknown keys (e.g. `customHeaders`, `cookies`) | Unit test | NOT TESTED | |
-| AK | MUST | Retries do not inflate failure count; one exhausted job = one failure | Integration test | NOT TESTED | |
-| AH | MUST | `scripts/smoke.ts` passes end to end | Script output | NOT TESTED | |
-| O | STRONG | Volatility probe suggests unstable lines; approved patterns are applied | Integration test | NOT TESTED | |
-| Q | STRONG | Cooldown suppresses immediate alert (event kept for digest); noisy flag at >70% of last 10 | Integration test | NOT TESTED | |
-| Z | STRONG | Retention removes only unreferenced old observations; confirmed versions and pending candidates survive | Integration test | NOT TESTED | |
-| Z2 | STRONG | Deleting a monitor/account cleans cascade rows, orphan observations and screenshot files | Integration test | NOT TESTED | |
-| DG | STRONG | Daily digest sent once per user per day per channel | Integration test | NOT TESTED | |
-| EM | STRONG | Email via Nodemailer works with SMTP env, otherwise `PENDING_CONFIG` | Mocked test | NOT TESTED | |
-| X1 | STRETCH | `http_dom` engine with cross-field rule (screenshots require Playwright) | Tests | NOT TESTED | |
-| X2 | STRETCH | Keyword alerts, number tracking + chart, Gemini summary, RSS feed, browser extension | Per feature | NOT TESTED | |
+| A1 | MUST | Auth, sessions, ownership isolation (user B cannot read or edit user A's monitor) | Integration tests | PASS | `tests/integration/auth.test.ts` |
+| A2 | MUST | CSRF header enforced; destination secrets masked in API and logs | Integration test + payload audit | PASS | `tests/integration/auth.test.ts`, `tests/integration/notifications.test.ts` |
+| B | MUST | SSRF: loopback, private, link-local, metadata, IPv6 ranges, IPv4-mapped IPv6, credentials in URL, bad ports all rejected; redirects re-validated | Unit + integration tests | PASS | `tests/unit/validateUrl.test.ts`, `tests/integration/capture.test.ts`, `tests/unit/securityConfig.test.ts` |
+| C | MUST | Browser interception: disallowed subresource aborted, WebSocket closed, service workers blocked | Playwright integration test | PASS | `src/server/capture/playwrightCapture.ts`, `tests/integration/capture.test.ts` |
+| D | MUST | Interval 15–1440 enforced; `next_check_at` set and advanced with ±10% jitter; dev override only for demo origin | Unit + integration tests | PASS | `tests/integration/auth.test.ts`, `tests/unit/captureConfig.test.ts` |
+| E | MUST | robots.txt honored per origin (http vs https separate), Allow/Disallow precedence, 4xx = allow, 5xx = disallow-for-now, raw body + headers cached 24 h | Unit tests | PASS | `tests/unit/robots.test.ts` |
+| F | MUST | One navigation per domain at a time; minimum gap enforced | Fake-timer test | PASS | `tests/unit/politeness.test.ts` |
+| H | MUST | OK / ERROR / BLOCKED classification (503, 404, timeout, 403, 429, CAPTCHA, empty) | Unit + fixture tests | PASS | `tests/unit/classifier.test.ts`, `tests/integration/capture.test.ts` |
+| I | MUST | ERROR/BLOCKED leave baseline, pending state and versions untouched | Integration test | PASS | `tests/integration/confirmation.test.ts` |
+| J | MUST | DOWN alert after `OUTAGE_THRESHOLD` failed jobs; RECOVERED alert on next OK | Integration test | PASS | `tests/integration/confirmation.test.ts`, `scripts/smoke.ts` |
+| K | MUST | SHA-256 hash stable for identical normalized text | Unit test | PASS | `tests/unit/normalize.test.ts` |
+| L | MUST | Stable page: 5 checks create exactly 1 version (baseline) | Integration test | PASS | `tests/integration/changeDetector.test.ts`, `scripts/smoke.ts` |
+| M | MUST | Headline change creates version 2 after confirmation | Integration test | PASS | `tests/integration/changeDetector.test.ts`, `scripts/smoke.ts` |
+| N | MUST | Timestamp, counter, token filters; clock/counter/token fixtures produce no alert | Unit + fixture tests | PASS | `tests/unit/noiseFilters.test.ts`, `scripts/smoke.ts` |
+| P | MUST | Candidate needs 2 consecutive matching checks; re-check scheduled after `CONFIRM_DELAY`, not the full interval; flip-back discards candidate | Integration test | PASS | `tests/integration/confirmation.test.ts` |
+| R | MUST | Expired job leases recovered on startup; no job lost or double-run | Crash-recovery test | PASS | `tests/integration/queue.test.ts` |
+| S | MUST | N compatible due subscriptions on one URL cause exactly 1 top-level navigation per cycle (N=20 MUST, N=200 STRONG) | Benchmark script | PASS | `scripts/benchmark.ts`, `docs/evidence/phase-10/benchmark-results.txt` |
+| T | MUST | Text diff (added/removed) and screenshot diff (changed-pixel %) correct on fixtures | Unit + browser check | PASS | `tests/unit/textDiff.test.ts`, `tests/unit/imageDiff.test.ts`, `tests/integration/diffApi.test.ts` |
+| U | MUST | Picker generates selectors; Watch/Ignore saved and honored by checks | Browser walkthrough + integration test | PASS | `tests/integration/picker.test.ts`, `src/client/pages/PickerPage.tsx` |
+| V | MUST | Outbox states truthful (SENT_EXTERNAL only on provider 2xx; PENDING_CONFIG; RECORDED_IN_APP; RETRYING; FAILED) | Mocked-provider tests | PASS | `tests/integration/notifications.test.ts` |
+| W | MUST | Duplicate alert suppressed by idempotency key; channels deliver independently | Unit test | PASS | `tests/integration/notifications.test.ts` |
+| Y | MUST | Demo server fixtures 1–16 all selectable from the Test Rig | Browser walkthrough | PASS | `src/server/demo/demoServer.ts`, `tests/integration/capture.test.ts` |
+| AA | MUST | Only due subscriptions are evaluated and advanced in a shared capture | Integration test | PASS | `tests/integration/scheduler.test.ts` |
+| AB | MUST | Different capture fingerprints on the same URL cause separate captures | Integration test | PASS | `tests/integration/scheduler.test.ts` |
+| AF | MUST | Omitted defaults, explicit defaults, and reordered keys give identical fingerprints | Unit test | PASS | `tests/unit/captureConfig.test.ts` |
+| AG | MUST | Material config changes give different fingerprints | Unit test | PASS | `tests/unit/captureConfig.test.ts` |
+| AI | MUST | Capture config rejects unknown keys (e.g. `customHeaders`, `cookies`) | Unit test | PASS | `tests/unit/captureConfig.test.ts` |
+| AK | MUST | Retries do not inflate failure count; one exhausted job = one failure | Integration test | PASS | `tests/integration/queue.test.ts` |
+| AH | MUST | `scripts/smoke.ts` passes end to end | Script output | PASS | `scripts/smoke.ts`, `docs/evidence/phase-10/smoke-results.txt` |
+| O | STRONG | Volatility probe suggests unstable lines; approved patterns are applied | Integration test | PASS | `src/server/engine/volatility.ts`, `tests/integration/volatility.test.ts` |
+| Q | STRONG | Cooldown suppresses immediate alert (event kept for digest); noisy flag at >70% of last 10 | Integration test | PASS | `tests/integration/confirmation.test.ts` |
+| Z | STRONG | Retention removes only unreferenced old observations; confirmed versions and pending candidates survive | Integration test | PASS | `tests/integration/lifecycle.test.ts` |
+| Z2 | STRONG | Deleting a monitor/account cleans cascade rows, orphan observations and screenshot files | Integration test | PASS | `tests/integration/lifecycle.test.ts` |
+| DG | STRONG | Daily digest sent once per user per day per channel | Integration test | PASS | `src/server/queue/scheduler.ts`, `tests/integration/schedulerDaily.test.ts` |
+| EM | STRONG | Email via Nodemailer works with SMTP env, otherwise `PENDING_CONFIG` | Mocked test | PASS | `tests/integration/notifications.test.ts` |
+| X1 | STRETCH | `http_dom` engine with cross-field rule (screenshots require Playwright) | Tests | PASS | `src/server/capture/httpDomCapture.ts`, `tests/integration/stretchFeatures.test.ts` |
+| X2 | STRETCH | Keyword alerts, number tracking + chart, Gemini summary, RSS feed, browser extension | Per feature | PASS | `src/server/engine/changeDetector.ts`, `src/server/engine/geminiSummary.ts`, `src/server/routes/stretchFeatures.ts`, `tests/integration/keywordAlerts.test.ts`, `tests/integration/stretchFeatures.test.ts` |
 
 ---
 

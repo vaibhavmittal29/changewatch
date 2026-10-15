@@ -1,27 +1,27 @@
 ======================================================================
 ChangeWatch Scalability & Shared-Fetch Benchmark (Matrix S & Q2)
-Started at: 2026-10-15T07:22:45.079Z
+Started at: 2026-10-15T16:07:17.992Z
 ======================================================================
 
 [1/2] Executing MUST Scope Benchmark (N = 20 Subscriptions)...
   ✓ Subscriptions Due:        20
   ✓ Jobs Enqueued:            1 (grouped by target + capture_fingerprint)
   ✓ Top-Level Navigations:    1 (Playwright browser fetch)
-  ✓ Subresource Requests:     1
+  ✓ Subresource Requests:     0
   ✓ Dedup Ratio:              20:1 (95.0% fetch reduction)
-  ✓ Scheduling Latency:       0.47 ms
-  ✓ Execution & Eval Latency: 1723.22 ms
-  ✓ Total Cycle Time:         1723.69 ms
+  ✓ Scheduling Latency:       0.45 ms
+  ✓ Execution & Eval Latency: 1716.14 ms
+  ✓ Total Cycle Time:         1716.59 ms
 
 [2/2] Executing STRONG Scope Scalability Benchmark (N = 200 Subscriptions)...
   ✓ Subscriptions Due:        200
   ✓ Jobs Enqueued:            1 (grouped by target + capture_fingerprint)
   ✓ Top-Level Navigations:    1 (Playwright browser fetch)
-  ✓ Subresource Requests:     1
+  ✓ Subresource Requests:     0
   ✓ Dedup Ratio:              200:1 (99.5% fetch reduction)
-  ✓ Scheduling Latency:       0.51 ms
-  ✓ Execution & Eval Latency: 1354.09 ms
-  ✓ Total Cycle Time:         1354.6 ms
+  ✓ Scheduling Latency:       0.4 ms
+  ✓ Execution & Eval Latency: 1260.47 ms
+  ✓ Total Cycle Time:         1260.87 ms
 
 ======================================================================
 BENCHMARK SUMMARY TABLE:
@@ -33,10 +33,10 @@ BENCHMARK SUMMARY TABLE:
 | Top-Level Navigations            | 1                | 1                |
 | Dedup Factor                     | 20:1             | 200:1            |
 | Fetch Overhead Reduction         | 95.0%            | 99.5%            |
-| Scheduler Latency                | 0.47 ms          | 0.51 ms          |
-| Worker Execution Latency         | 1723.22 ms       | 1354.09 ms       |
-| Total Cycle Duration             | 1723.69 ms       | 1354.6 ms        |
+| Scheduler Latency                | 0.45 ms          | 0.4 ms           |
+| Worker Execution Latency         | 1716.14 ms       | 1260.47 ms       |
+| Total Cycle Duration             | 1716.59 ms       | 1260.87 ms       |
 ======================================================================
 Acceptance Matrix Row S (Design Question 2: Shared Fetch) Verified!
-Finished at: 2026-10-15T07:22:48.261Z
+Finished at: 2026-10-15T16:07:20.996Z
 ======================================================================

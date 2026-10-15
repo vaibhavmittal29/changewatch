@@ -35,6 +35,7 @@ export interface CaptureResult {
   rawText: string;
   screenshotPath: string | null;
   subresourceCount: number;
+  topLevelNavigations: number;
   durationMs: number;
   pageTooLarge: boolean;
   errorMessage?: string;
@@ -96,7 +97,8 @@ export async function capturePage(
 
   const page = await context.newPage();
   let subresourceCount = 0;
-  let finalStatus = 200;
+  let topLevelNavigations = 0;
+  let finalStatus = 0;
   let finalUrl = targetUrl;
   let pageTooLarge = false;
 
@@ -106,41 +108,39 @@ export async function capturePage(
 
     // 2. Intercept and validate all network routes (SSRF & egress control)
     await page.route('**/*', async (route) => {
-      const request = route.request();
-      const resourceType = request.resourceType();
-      const reqUrlStr = request.url();
-
-      let parsed: URL;
       try {
-        parsed = new URL(reqUrlStr);
+        const req = route.request();
+        const resType = req.resourceType();
+        let parsed: URL;
+        try { parsed = new URL(req.url()); } catch { return await route.abort('blockedbyclient'); }
+
+        if (!['http:', 'https:', 'data:', 'blob:'].includes(parsed.protocol)) {
+          return await route.abort('blockedbyclient');
+        }
+        if (['media', 'font'].includes(resType)) return await route.abort('blockedbyclient');
+
+        const host = parsed.hostname.toLowerCase();
+        if (TRACKER_DOMAINS.some(d => host.endsWith(d))) return await route.abort('blockedbyclient');
+
+        const port = parseInt(parsed.port || (parsed.protocol === 'https:' ? '443' : '80'), 10);
+        const isDemo = env.ALLOW_LOCAL_DEMO &&
+          (host === 'localhost' || host === '127.0.0.1' || host === '::1') &&
+          port === env.DEMO_PORT;
+
+        if (parsed.protocol.startsWith('http') && host) {
+          const safe = await isSafeRouteHost(host, port, isDemo);
+          if (!safe) return await route.abort('blockedbyclient');
+        }
+
+        if (req.isNavigationRequest() && resType === 'document') {
+          topLevelNavigations++;
+        } else {
+          subresourceCount++;
+        }
+        return await route.continue();
       } catch {
-        return route.abort('blockedbyclient');
+        return await route.abort('blockedbyclient').catch(() => {});
       }
-
-      if (!['http:', 'https:', 'data:', 'blob:'].includes(parsed.protocol)) {
-        return route.abort('blockedbyclient');
-      }
-      if (['media', 'font'].includes(resourceType)) {
-        return route.abort('blockedbyclient');
-      }
-
-      const host = parsed.hostname.toLowerCase();
-      if (TRACKER_DOMAINS.some(d => host.endsWith(d))) {
-        return route.abort('blockedbyclient');
-      }
-
-      const port = parseInt(parsed.port || (parsed.protocol === 'https:' ? '443' : '80'), 10);
-      const isDemo = env.ALLOW_LOCAL_DEMO &&
-        (host === 'localhost' || host === '127.0.0.1' || host === '::1') &&
-        port === env.DEMO_PORT;
-
-      if (parsed.protocol.startsWith('http') && host) {
-        const safe = await isSafeRouteHost(host, port, isDemo);
-        if (!safe) return route.abort('blockedbyclient');
-      }
-
-      subresourceCount++;
-      route.continue();
     });
 
     // Validate target URL before navigation
@@ -220,6 +220,7 @@ export async function capturePage(
       rawText,
       screenshotPath,
       subresourceCount,
+      topLevelNavigations,
       durationMs: Date.now() - startTime,
       pageTooLarge,
     };
@@ -233,6 +234,7 @@ export async function capturePage(
       rawText: '',
       screenshotPath: null,
       subresourceCount,
+      topLevelNavigations,
       durationMs: Date.now() - startTime,
       pageTooLarge: false,
       errorMessage: message,

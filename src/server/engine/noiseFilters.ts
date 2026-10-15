@@ -106,6 +106,10 @@ export function applyNoiseFilters(
             const re = new RegExp(pattern.slice(1, -1), 'i');
             return re.test(trimmed);
           }
+          if (pattern.startsWith('^') || pattern.endsWith('$')) {
+            const re = new RegExp(pattern, 'i');
+            return re.test(trimmed);
+          }
         } catch {
           // Fall through to plain substring match
         }

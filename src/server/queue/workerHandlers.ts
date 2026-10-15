@@ -26,6 +26,7 @@ export interface SubscriptionRow {
   sensitivity: 'low' | 'balanced' | 'high';
   noise_filters: string;
   learned_ignore_patterns: string;
+  keyword_rules?: string;
 }
 
 export interface ObservationRow {
@@ -71,10 +72,11 @@ export function incrementFailureAndAdvance(db: Database, subId: string, interval
 }
 
 export function handleBlockedByRobots(db: Database, candidate: WorkerCandidateRow, reason: string): void {
+  const nowIso = new Date().toISOString();
   const dueSubs = db.prepare(`
     SELECT id, interval_minutes FROM subscriptions
-    WHERE target_id = ? AND capture_fingerprint = ? AND is_paused = 0
-  `).all(candidate.target_id, candidate.capture_fingerprint) as { id: string; interval_minutes: number }[];
+    WHERE target_id = ? AND capture_fingerprint = ? AND is_paused = 0 AND next_check_at <= ?
+  `).all(candidate.target_id, candidate.capture_fingerprint, nowIso) as { id: string; interval_minutes: number }[];
 
   for (const sub of dueSubs) {
     recordCheckRun(db, sub.id, candidate.target_id, candidate.id, 'BLOCKED', reason, null, 0, false);

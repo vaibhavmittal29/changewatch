@@ -235,7 +235,7 @@ Allow: /robots-allowed/
 export function startDemoServer(port = 4000): Promise<Server> {
   const app = createDemoApp();
   return new Promise((resolve) => {
-    const server = app.listen(port, '0.0.0.0', () => {
+    const server = app.listen(port, '127.0.0.1', () => {
       console.log(`[DemoServer] 16 Fixtures listening on http://127.0.0.1:${port}`);
       resolve(server);
     });

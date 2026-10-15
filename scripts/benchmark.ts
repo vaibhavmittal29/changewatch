@@ -97,7 +97,7 @@ async function runBenchmarkForN(
   const executionDurationMs = Math.round((t3 - t2) * 100) / 100;
 
   // 3. Inspect results
-  const obsRows = db.prepare('SELECT id, subresource_count FROM observations WHERE target_id = ?').all(targetId) as { id: string; subresource_count: number }[];
+  const obsRows = db.prepare('SELECT id, top_level_navigations, subresource_count FROM observations WHERE target_id = ?').all(targetId) as { id: string; top_level_navigations: number; subresource_count: number }[];
   if (obsRows.length !== 1) {
     throw new Error(`Expected exactly 1 observation for target, found ${obsRows.length}`);
   }
@@ -116,7 +116,10 @@ async function runBenchmarkForN(
     throw new Error(`Expected ${N} baseline versions created, found ${baselineCount.c}`);
   }
 
-  const topLevelNavigations = 1;
+  const topLevelNavigations = obsRows[0].top_level_navigations || 1;
+  if (topLevelNavigations !== 1) {
+    throw new Error(`Expected exactly 1 top-level navigation, found ${topLevelNavigations}`);
+  }
   const subresourceRequests = obsRows[0].subresource_count;
   const dedupRatio = `${N}:1`;
   const bandwidthSavedPct = `${(((N - 1) / N) * 100).toFixed(1)}%`;

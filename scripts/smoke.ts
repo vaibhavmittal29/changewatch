@@ -166,8 +166,14 @@ async function runSmokeTests() {
     log('\n[5/5] Testing Browser SSRF & Private Redirect Defense...');
     const { config } = captureFingerprint({});
     const redirectRes = await capturePage('http://127.0.0.1:4000/demo/redirect-private', config);
-    if (!redirectRes.errorMessage && redirectRes.httpStatus === 200) {
-      throw new Error('Browser SSRF guard failed: allowed redirect to private metadata IP');
+    const err = redirectRes.errorMessage?.toLowerCase() || '';
+    const isExplicitlyBlocked = err.includes('blockedbyclient') ||
+      err.includes('err_blocked_by_client') ||
+      err.includes('err_connection_timed_out') ||
+      err.includes('ssrf') ||
+      err.includes('disallowed');
+    if (!isExplicitlyBlocked || redirectRes.httpStatus === 200) {
+      throw new Error(`Browser SSRF guard failed: redirect was not blocked cleanly. Output: ${redirectRes.errorMessage}`);
     }
     log(`  ✓ Browser route interception successfully aborted redirect to private IP (${redirectRes.errorMessage || 'aborted'})`);
 

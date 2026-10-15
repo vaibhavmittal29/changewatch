@@ -5,7 +5,7 @@ import path from 'node:path';
 // Load environment variables from .env if present
 dotenv.config();
 
-const EnvSchema = z.object({
+export const EnvSchema = z.object({
   PORT: z.coerce.number().default(3000),
   BASE_URL: z.string().transform(val => {
     if (!val || val === '/' || val === './') {
@@ -20,7 +20,7 @@ const EnvSchema = z.object({
       return false;
     }
   }, 'Invalid URL').default('http://localhost:3000'),
-  APP_SECRET: z.string().min(32, 'APP_SECRET must be at least 32 characters long').default('changewatch_super_secure_random_key_min_32_chars_long_2026'),
+  APP_SECRET: z.string().min(32, 'APP_SECRET must be at least 32 characters long').optional(),
   DATABASE_PATH: z.string().default('./data/changewatch.db'),
   DATA_DIR: z.string().default('./data'),
   CONTACT_EMAIL: z.string().email().default('contact@changewatch.local'),
@@ -45,17 +45,44 @@ const EnvSchema = z.object({
   SMTP_FROM: z.string().optional(),
   GEMINI_API_KEY: z.string().optional(),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+}).superRefine((data, ctx) => {
+  const PREDICTABLE_SECRETS = [
+    'changewatch_super_secure_random_key_min_32_chars_long_2026',
+    '12345678901234567890123456789012',
+  ];
+  if (data.NODE_ENV === 'production') {
+    if (!data.APP_SECRET || PREDICTABLE_SECRETS.includes(data.APP_SECRET)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['APP_SECRET'],
+        message: 'Production requires a high-entropy APP_SECRET of at least 32 characters; default keys are rejected.',
+      });
+    }
+    if (data.PBKDF2_ITERATIONS < 600000) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['PBKDF2_ITERATIONS'],
+        message: 'Production requires PBKDF2_ITERATIONS >= 600000.',
+      });
+    }
+  }
 });
 
-const parsed = EnvSchema.safeParse(process.env);
+const rawEnv = {
+  ...process.env,
+  APP_SECRET: process.env.APP_SECRET || (process.env.NODE_ENV === 'production' ? undefined : 'dev_changewatch_local_secret_key_min_32_chars_long'),
+};
+
+export const parsed = EnvSchema.safeParse(rawEnv);
 
 if (!parsed.success) {
-  console.error('Invalid environment variables:', parsed.error.format(), 'BASE_URL is:', JSON.stringify(process.env.BASE_URL));
+  console.error('Invalid environment variables:', parsed.error.format());
   process.exit(1);
 }
 
 export const env = {
   ...parsed.data,
+  APP_SECRET: (parsed.data.APP_SECRET || 'dev_changewatch_local_secret_key_min_32_chars_long') as string,
   DATABASE_PATH: path.resolve(process.cwd(), parsed.data.DATABASE_PATH),
   DATA_DIR: path.resolve(process.cwd(), parsed.data.DATA_DIR),
 };
