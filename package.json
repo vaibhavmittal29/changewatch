@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "tsx watch src/server/index.ts",
     "build": "tsc -b && vite build",
-    "start": "node dist/server/index.js",
+    "start": "tsx src/server/index.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint \"src/**/*.{ts,tsx}\" \"tests/**/*.{ts,tsx}\" --max-warnings 0",
     "test": "vitest run",
