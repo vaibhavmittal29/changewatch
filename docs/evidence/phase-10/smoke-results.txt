@@ -1,6 +1,6 @@
 ======================================================================
 ChangeWatch End-to-End Smoke Test Suite (Acceptance Matrix AH)
-Started at: 2026-10-15T07:02:27.642Z
+Started at: 2026-10-15T07:22:03.597Z
 ======================================================================
 
 [1/4] Testing Real Change Detection on /demo/headline...
@@ -20,5 +20,5 @@ Started at: 2026-10-15T07:02:27.642Z
 
 ======================================================================
 ALL 4 SMOKE TEST SUITE CRITERIA PASSED SUCCESSFULLY!
-Finished at: 2026-10-15T07:02:49.697Z
+Finished at: 2026-10-15T07:22:26.191Z
 ======================================================================

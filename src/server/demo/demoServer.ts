@@ -210,23 +210,17 @@ Allow: /robots-allowed/
   });
 
   // Control APIs for Test Rig & automated testing
-  app.get('/demo/fixtures', (_req, res) => {
-    res.json({ fixtures: DEMO_FIXTURES, state: fixtureState });
-  });
+  app.get('/demo/fixtures', (_req, res) => res.json({ fixtures: DEMO_FIXTURES, state: fixtureState }));
 
   app.post('/demo/set-headline', (req, res) => {
     const text = req.body?.text || (req.query?.text as string);
-    if (text) {
-      fixtureState.headlineText = String(text);
-    }
+    if (text) fixtureState.headlineText = String(text);
     res.json({ ok: true, headline: fixtureState.headlineText });
   });
 
   app.post('/demo/set-price', (req, res) => {
     const val = parseFloat(req.body?.value || req.query?.value);
-    if (!isNaN(val)) {
-      fixtureState.priceValue = val;
-    }
+    if (!isNaN(val)) fixtureState.priceValue = val;
     res.json({ ok: true, price: fixtureState.priceValue });
   });
 
