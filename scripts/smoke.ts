@@ -167,15 +167,15 @@ async function runSmokeTests() {
     const { config } = captureFingerprint({});
     const redirectRes = await capturePage('http://127.0.0.1:4000/demo/redirect-private', config);
     const err = redirectRes.errorMessage?.toLowerCase() || '';
-    const isExplicitlyBlocked = err.includes('blockedbyclient') ||
+    const isExplicitlyBlocked = (redirectRes.httpStatus === 403 && redirectRes.sanitizedDom.includes('SSRF_BLOCKED')) ||
+      err.includes('blockedbyclient') ||
       err.includes('err_blocked_by_client') ||
-      err.includes('err_connection_timed_out') ||
       err.includes('ssrf') ||
       err.includes('disallowed');
-    if (!isExplicitlyBlocked || redirectRes.httpStatus === 200) {
-      throw new Error(`Browser SSRF guard failed: redirect was not blocked cleanly. Output: ${redirectRes.errorMessage}`);
+    if (!isExplicitlyBlocked || redirectRes.httpStatus === 200 || redirectRes.isTimeout) {
+      throw new Error(`Browser SSRF guard failed: redirect was not deterministically blocked. Status: ${redirectRes.httpStatus}, isTimeout: ${redirectRes.isTimeout}`);
     }
-    log(`  ✓ Browser route interception successfully aborted redirect to private IP (${redirectRes.errorMessage || 'aborted'})`);
+    log(`  ✓ Browser route interception deterministically blocked redirect to private IP (HTTP ${redirectRes.httpStatus} SSRF_BLOCKED)`);
 
     log('\n======================================================================');
     log('ALL 5 SMOKE TEST SUITE CRITERIA PASSED SUCCESSFULLY!');

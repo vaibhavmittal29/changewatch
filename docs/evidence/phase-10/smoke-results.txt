@@ -1,6 +1,6 @@
 ======================================================================
 ChangeWatch End-to-End Smoke Test Suite (Matrix AH)
-Started at: 2026-10-15T16:05:11.569Z
+Started at: 2026-10-15T16:59:30.818Z
 ======================================================================
 
 [1/5] Testing Real Change Detection on /demo/headline...
@@ -18,12 +18,9 @@ Started at: 2026-10-15T16:05:11.569Z
   ✓ Subsequent OK check triggered RECOVERED event and reset counters to 0
 
 [5/5] Testing Browser SSRF & Private Redirect Defense...
-  ✓ Browser route interception successfully aborted redirect to private IP (page.goto: net::ERR_CONNECTION_TIMED_OUT at http://127.0.0.1:4000/demo/redirect-private
-Call log:
-[2m  - navigating to "http://127.0.0.1:4000/demo/redirect-private", waiting until "domcontentloaded"[22m
-)
+  ✓ Browser route interception deterministically blocked redirect to private IP (HTTP 403 SSRF_BLOCKED)
 
 ======================================================================
 ALL 5 SMOKE TEST SUITE CRITERIA PASSED SUCCESSFULLY!
-Finished at: 2026-10-15T16:05:56.405Z
+Finished at: 2026-10-15T16:59:55.145Z
 ======================================================================

@@ -134,6 +134,24 @@ export async function capturePage(
 
         if (req.isNavigationRequest() && resType === 'document' && req.frame() === page.mainFrame()) {
           topLevelNavigations++;
+          const fetched = await route.fetch({ maxRedirects: 0 });
+          if (fetched.status() >= 300 && fetched.status() < 400) {
+            const loc = fetched.headers()['location'];
+            if (loc) {
+              const redUrl = new URL(loc, req.url());
+              const redHost = redUrl.hostname.toLowerCase();
+              const redPort = parseInt(redUrl.port || (redUrl.protocol === 'https:' ? '443' : '80'), 10);
+              const redDemo = env.ALLOW_LOCAL_DEMO && (redHost === 'localhost' || redHost === '127.0.0.1' || redHost === '::1') && redPort === env.DEMO_PORT;
+              if (!(await isSafeRouteHost(redHost, redPort, redDemo))) {
+                return await route.fulfill({
+                  status: 403,
+                  contentType: 'text/plain',
+                  body: `SSRF_BLOCKED: Prohibited redirect destination '${redHost}'`,
+                });
+              }
+            }
+          }
+          return await route.fulfill({ response: fetched });
         } else {
           subresourceCount++;
         }
