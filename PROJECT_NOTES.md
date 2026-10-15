@@ -1,8 +1,8 @@
 # ChangeWatch — Project Notes
 
 **Single Source of Truth Plan:** [`docs/implementation_plan.md`](./docs/implementation_plan.md)  
-**Current Phase:** Phase 10 (Benchmark & Smoke Test Suite) — COMPLETED  
-**Last Updated:** Phase 10 Complete (Smoke test & 200-subscription scalability benchmark passed, 101 tests passing across 21 suites, evidence captured in docs/evidence/phase-10/)
+**Current Phase:** Phase 11 (Documentation, Polish and Interview Notes) — COMPLETED  
+**Last Updated:** Phase 11 Complete (Comprehensive README.md, docs/INTERVIEW_QA.md, and finalized Acceptance Matrix)
 
 ---
 
@@ -253,5 +253,6 @@ changewatch/
 | Phase 8 | Phase 8 | Dashboard, Timeline, Lifecycle, Retention Pruner & UI Walkthrough | All 98 tests passed; cascading delete (Z2), retention pruner (Z), auto-refresh dashboard, add-monitor modal, monitor detail timeline, alert settings, test rig fixtures 1-16, and Playwright walkthrough screenshots verified |
 | Phase 9 | Phase 9 | Visual Selector Picker: in-page element inspection, interactive overlay canvas, popovers, single extraction contract test & monitor update | All 101 tests passed across 21 suites; row U verified; banner ignored and headline alerted; 5 walkthrough screenshots saved to `docs/evidence/phase-9/` |
 | Phase 10 | Phase 10 | Benchmark & Smoke Suite: end-to-end smoke test on demo server & 200-sub scalability benchmark | All 4 smoke criteria passed (real change, noise filters, outage/CAPTCHA baseline untouched, DOWN/RECOVERED flow); 20:1 and 200:1 shared-fetch benchmark verified with 1 navigation per cycle and 99.5% network reduction |
+| Phase 11 | Phase 11 | Documentation, Polish & Interview Notes: Root README, Mermaid architecture, 3-minute demo script & INTERVIEW_QA | Complete system documentation, setup instructions, 4 design question answers, and 20-question deep-dive technical interview guide authored |
 
 
