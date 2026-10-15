@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { createHash } from 'node:crypto';
 
-export const DEFAULT_UA = 'ChangeWatch/1.0 (student project; VIT Vellore; contact: see CONTACT_EMAIL)';
+export const DEFAULT_UA = 'ChangeWatch/1.0 (+https://github.com/vaibhavmittal29/changewatch; contact: vaibhavmittalwork@gmail.com)';
 
 export const CaptureConfigSchema = z.object({
   engine: z.literal('playwright').default('playwright'),   // 'http_dom' is STRETCH

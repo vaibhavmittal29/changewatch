@@ -2,6 +2,7 @@ import { chromium, type Browser } from 'playwright';
 import crypto from 'node:crypto';
 import path from 'node:path';
 import fs from 'node:fs';
+import dns from 'node:dns/promises';
 import { env } from '../config.js';
 import { type CaptureConfig } from './captureConfig.js';
 import { isPublicIp } from './validateUrl.js';
@@ -45,13 +46,33 @@ const TRACKER_DOMAINS = [
   'facebook.net', 'adnxs.com', 'criteo.com', 'hotjar.com'
 ];
 
+async function isSafeRouteHost(host: string, port: number, isDemo: boolean): Promise<boolean> {
+  if (isDemo) return true;
+  const h = host.toLowerCase();
+  if (h === 'localhost' || h.endsWith('.localhost') || h.endsWith('.local') ||
+      h.endsWith('.internal') || h.endsWith('.lan') || h.endsWith('.arpa') ||
+      h.endsWith('.test') || h.endsWith('.example')) {
+    return false;
+  }
+  if (port !== 80 && port !== 443) return false;
+  if (/^\d+\.\d+\.\d+\.\d+$/.test(h) || h.includes(':')) {
+    return isPublicIp(h);
+  }
+  try {
+    const records = await dns.lookup(h, { all: true });
+    if (!records || records.length === 0) return false;
+    return records.every(r => isPublicIp(r.address));
+  } catch {
+    return false;
+  }
+}
+
 /**
- * Headless Playwright capture engine meeting all Section 9.1 criteria:
- * - Route interception (aborts heavy media/trackers, closes WebSockets)
+ * Headless Playwright capture engine:
+ * - Route interception (SSRF protection, aborts heavy media/trackers, closes WebSockets)
  * - Service workers blocked
- * - DOM sanitization (removes scripts, styles, iframes, comments, hidden elements)
- * - Full-page PNG screenshot
- * - Unified block-level text extraction
+ * - Full-page PNG screenshot of rendered page with styles intact
+ * - In-page hidden element extraction while computed styles active, then sanitization
  */
 export async function capturePage(
   targetUrl: string,
@@ -83,7 +104,7 @@ export async function capturePage(
     // 1. Intercept and terminate WebSockets
     await page.routeWebSocket('**/*', (ws) => ws.close());
 
-    // 2. Intercept all network routes
+    // 2. Intercept and validate all network routes (SSRF & egress control)
     await page.route('**/*', async (route) => {
       const request = route.request();
       const resourceType = request.resourceType();
@@ -96,40 +117,40 @@ export async function capturePage(
         return route.abort('blockedbyclient');
       }
 
-      // Allow only http, https, data, blob
       if (!['http:', 'https:', 'data:', 'blob:'].includes(parsed.protocol)) {
         return route.abort('blockedbyclient');
       }
-
-      // Abort heavy media for change-detection speed
       if (['media', 'font'].includes(resourceType)) {
         return route.abort('blockedbyclient');
       }
 
-      // Abort known trackers
       const host = parsed.hostname.toLowerCase();
       if (TRACKER_DOMAINS.some(d => host.endsWith(d))) {
         return route.abort('blockedbyclient');
       }
 
-      // If remote host, check against private IP ranges (unless demo server)
-      const isDemo = env.ALLOW_LOCAL_DEMO && (
-        (host === 'localhost' || host === '127.0.0.1') &&
-        parseInt(parsed.port || '80', 10) === env.DEMO_PORT
-      );
+      const port = parseInt(parsed.port || (parsed.protocol === 'https:' ? '443' : '80'), 10);
+      const isDemo = env.ALLOW_LOCAL_DEMO &&
+        (host === 'localhost' || host === '127.0.0.1' || host === '::1') &&
+        port === env.DEMO_PORT;
 
-      if (!isDemo && parsed.protocol.startsWith('http') && parsed.hostname) {
-        // Direct IP check
-        if (/^\d+\.\d+\.\d+\.\d+$/.test(parsed.hostname) || parsed.hostname.includes(':')) {
-          if (!isPublicIp(parsed.hostname)) {
-            return route.abort('blockedbyclient');
-          }
-        }
+      if (parsed.protocol.startsWith('http') && host) {
+        const safe = await isSafeRouteHost(host, port, isDemo);
+        if (!safe) return route.abort('blockedbyclient');
       }
 
       subresourceCount++;
       route.continue();
     });
+
+    // Validate target URL before navigation
+    const targetParsed = new URL(targetUrl);
+    const targetHost = targetParsed.hostname.toLowerCase();
+    const targetPort = parseInt(targetParsed.port || (targetParsed.protocol === 'https:' ? '443' : '80'), 10);
+    const targetIsDemo = env.ALLOW_LOCAL_DEMO && (targetHost === 'localhost' || targetHost === '127.0.0.1' || targetHost === '::1') && targetPort === env.DEMO_PORT;
+    if (!targetIsDemo && !(await isSafeRouteHost(targetHost, targetPort, false))) {
+      throw new Error(`SSRF guard blocked navigation to disallowed host '${targetHost}'`);
+    }
 
     // 3. Navigate with 30s timeout
     const response = await page.goto(targetUrl, {
@@ -142,62 +163,51 @@ export async function capturePage(
       finalUrl = response.url();
     }
 
-    // Wait up to 5s for network idle (timeout here is ignored)
     await page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
 
-    // Optional wait strategy selector
     if (config.waitStrategy?.waitForSelector) {
       await page.waitForSelector(config.waitStrategy.waitForSelector, {
         timeout: config.waitStrategy.timeoutMs || 10000,
       }).catch(() => {});
     }
 
-    // 500ms settle delay
     await page.waitForTimeout(500);
 
-    // 4. In-page DOM sanitization
-    await page.evaluate(() => {
-      // Remove scripts, styles, noscript, iframes
-      const tagsToRemove = ['script', 'style', 'noscript', 'iframe'];
-      for (const tag of tagsToRemove) {
-        document.querySelectorAll(tag).forEach(el => el.remove());
-      }
-      // Remove hidden and non-visible elements
-      document.querySelectorAll('*').forEach(el => {
-        const style = window.getComputedStyle(el);
-        if (style.display === 'none' || style.visibility === 'hidden' || el.hasAttribute('hidden')) {
-          el.remove();
-        }
-      });
-      // Remove HTML comments
-      const iterator = document.createNodeIterator(document.documentElement, NodeFilter.SHOW_COMMENT);
-      let curr = iterator.nextNode();
-      while (curr) {
-        curr.parentNode?.removeChild(curr);
-        curr = iterator.nextNode();
-      }
-    });
-
-    const sanitizedDom = await page.content();
-
-    // Check ~1.5 MB DOM cap
-    if (sanitizedDom.length > 1.5 * 1024 * 1024) {
-      pageTooLarge = true;
-    }
-
-    // 5. Screenshot
+    // 4. Capture screenshot FIRST while styles, fonts, and layout are intact
     let screenshotPath: string | null = null;
     try {
       const screenshotsDir = path.join(env.DATA_DIR, 'screenshots');
-      if (!fs.existsSync(screenshotsDir)) {
-        fs.mkdirSync(screenshotsDir, { recursive: true });
-      }
+      if (!fs.existsSync(screenshotsDir)) fs.mkdirSync(screenshotsDir, { recursive: true });
       const fullPath = path.join(screenshotsDir, `${obsId}.png`);
       await page.screenshot({ path: fullPath, fullPage: true });
       screenshotPath = fullPath;
     } catch (ssErr) {
       console.warn(`[capturePage] Screenshot capture failed for ${obsId}:`, ssErr);
     }
+
+    // 5. In-page DOM sanitization: remove hidden elements while computed styles are intact
+    await page.evaluate(() => {
+      document.querySelectorAll('*').forEach(el => {
+        try {
+          const style = window.getComputedStyle(el);
+          if (style.display === 'none' || style.visibility === 'hidden' || el.hasAttribute('hidden')) {
+            el.remove();
+          }
+        } catch {}
+      });
+      ['script', 'style', 'noscript', 'iframe'].forEach(tag => {
+        document.querySelectorAll(tag).forEach(el => el.remove());
+      });
+      const it = document.createNodeIterator(document.documentElement, NodeFilter.SHOW_COMMENT);
+      let curr = it.nextNode();
+      while (curr) {
+        curr.parentNode?.removeChild(curr);
+        curr = it.nextNode();
+      }
+    });
+
+    const sanitizedDom = await page.content();
+    if (sanitizedDom.length > 1.5 * 1024 * 1024) pageTooLarge = true;
 
     // 6. Text extraction
     const rawText = extractText(sanitizedDom, [], []);
@@ -215,7 +225,6 @@ export async function capturePage(
     };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
-    const isTimeout = message.toLowerCase().includes('timeout');
     return {
       observationId: obsId,
       finalUrl,
@@ -227,7 +236,7 @@ export async function capturePage(
       durationMs: Date.now() - startTime,
       pageTooLarge: false,
       errorMessage: message,
-      isTimeout,
+      isTimeout: message.toLowerCase().includes('timeout'),
     };
   } finally {
     await context.close().catch(() => {});

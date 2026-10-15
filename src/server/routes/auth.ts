@@ -5,6 +5,7 @@ import { getDb } from '../db/index.js';
 import { hashPassword, verifyPassword } from '../auth/password.js';
 import { createSession, deleteSession } from '../auth/sessions.js';
 import { authRateLimiter } from '../auth/middleware.js';
+import { verifyCsrf } from '../auth/csrf.js';
 import { env } from '../config.js';
 
 export const authRouter = Router();
@@ -127,7 +128,7 @@ authRouter.post('/login', authRateLimiter, async (req, res) => {
   });
 });
 
-authRouter.post('/logout', (req, res) => {
+authRouter.post('/logout', verifyCsrf, (req, res) => {
   const token = req.cookies?.[COOKIE_NAME];
   if (token) {
     deleteSession(getDb(), token);

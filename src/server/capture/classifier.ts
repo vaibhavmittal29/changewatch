@@ -17,29 +17,62 @@ export interface ClassificationResult {
   reason: string;
 }
 
-const CAPTCHA_MARKERS = [
-  'recaptcha',
-  'hcaptcha',
+const CHALLENGE_TITLES = [
+  'just a moment...',
+  'attention required! | cloudflare',
+  'security check to access',
+  'security check',
+  'ddos protection',
+  'verify you are human',
+];
+
+const CHALLENGE_PHRASES = [
+  'verify you are human',
+  'verifying you are human',
+  'verify you are not a robot',
+  'unusual traffic from your computer network',
+  'security check to access',
+  'please complete the security check',
+  'bot detection',
   'cf-turnstile',
   'cf-challenge',
   'challenges.cloudflare.com',
-  'just a moment...',
-  'verify you are human',
-  'verifying you are human',
-  'unusual traffic from your computer network',
-  'attention required! | cloudflare',
-  'security check to access',
-  'bot detection',
-  'please enable cookies and reload the page',
 ];
 
 /**
- * Checks if HTML or text contains known CAPTCHA, bot challenge, or Cloudflare challenge markers.
+ * Checks whether content represents an active CAPTCHA or Cloudflare challenge page.
+ * Avoids false matches on normal pages that merely embed a recaptcha badge/widget.
  */
+export function isChallengePage(sanitizedDom: string = '', rawText: string = ''): boolean {
+  const domLower = sanitizedDom.toLowerCase();
+  const textLower = rawText.toLowerCase();
+  const textLength = rawText.trim().length;
+
+  // 1. Check title tag for explicit interstitial/challenge titles
+  const titleMatch = domLower.match(/<title[^>]*>([^<]*)<\/title>/);
+  if (titleMatch) {
+    const title = titleMatch[1].trim();
+    if (CHALLENGE_TITLES.some(t => title.includes(t))) {
+      return true;
+    }
+  }
+
+  // 2. Interstitial challenge page: short text (< 600 chars) + challenge phrases
+  if (textLength < 600) {
+    if (CHALLENGE_PHRASES.some(phrase => domLower.includes(phrase) || textLower.includes(phrase))) {
+      return true;
+    }
+    if ((domLower.includes('g-recaptcha') || domLower.includes('hcaptcha')) &&
+        (textLower.includes('robot') || textLower.includes('human') || textLower.includes('verify') || textLength < 100)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 export function containsCaptchaChallenge(content: string): boolean {
-  if (!content) return false;
-  const lower = content.toLowerCase();
-  return CAPTCHA_MARKERS.some(marker => lower.includes(marker));
+  return isChallengePage(content, content);
 }
 
 /**
@@ -47,7 +80,6 @@ export function containsCaptchaChallenge(content: string): boolean {
  * Answers Design Question 1: Outage or CAPTCHA is never a change.
  */
 export function classifyCheck(input: ClassifierInput): ClassificationResult {
-  // 1. Robots.txt rules
   if (input.isRobotsDisallowed) {
     return { outcome: 'BLOCKED', reason: 'robots_disallowed' };
   }
@@ -55,7 +87,6 @@ export function classifyCheck(input: ClassifierInput): ClassificationResult {
     return { outcome: 'BLOCKED', reason: 'robots_unavailable' };
   }
 
-  // 2. Network & Transport failures
   if (input.isTimeout) {
     return { outcome: 'ERROR', reason: 'timeout' };
   }
@@ -72,14 +103,11 @@ export function classifyCheck(input: ClassifierInput): ClassificationResult {
     }
   }
 
-  // 3. Page size cap
   if (input.pageTooLarge) {
     return { outcome: 'ERROR', reason: 'page_too_large' };
   }
 
   const status = input.httpStatus ?? 0;
-
-  // 4. Rate-limiting & Access Denied (BLOCKED)
   if (status === 429) {
     return { outcome: 'BLOCKED', reason: 'rate_limited_429' };
   }
@@ -87,13 +115,11 @@ export function classifyCheck(input: ClassifierInput): ClassificationResult {
     return { outcome: 'BLOCKED', reason: 'forbidden_403' };
   }
 
-  // 5. Bot & CAPTCHA detection (BLOCKED)
-  const combinedContent = `${input.sanitizedDom || ''} ${input.rawText || ''}`;
-  if (containsCaptchaChallenge(combinedContent)) {
+  // Bot & CAPTCHA challenge detection
+  if (isChallengePage(input.sanitizedDom, input.rawText)) {
     return { outcome: 'BLOCKED', reason: 'captcha_challenge' };
   }
 
-  // 6. HTTP Error codes (ERROR)
   if (status >= 500 && status <= 599) {
     return { outcome: 'ERROR', reason: `http_${status}` };
   }
@@ -104,7 +130,6 @@ export function classifyCheck(input: ClassifierInput): ClassificationResult {
     return { outcome: 'ERROR', reason: `http_${status}` };
   }
 
-  // 7. Empty content check (under 20 characters of readable text)
   const textLength = (input.rawText || '').trim().length;
   if (textLength < 20) {
     return { outcome: 'ERROR', reason: 'empty_content' };

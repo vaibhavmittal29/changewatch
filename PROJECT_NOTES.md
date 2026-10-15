@@ -254,5 +254,6 @@ changewatch/
 | Phase 9 | Phase 9 | Visual Selector Picker: in-page element inspection, interactive overlay canvas, popovers, single extraction contract test & monitor update | All 101 tests passed across 21 suites; row U verified; banner ignored and headline alerted; 5 walkthrough screenshots saved to `docs/evidence/phase-9/` |
 | Phase 10 | Phase 10 | Benchmark & Smoke Suite: end-to-end smoke test on demo server & 200-sub scalability benchmark | All 4 smoke criteria passed (real change, noise filters, outage/CAPTCHA baseline untouched, DOWN/RECOVERED flow); 20:1 and 200:1 shared-fetch benchmark verified with 1 navigation per cycle and 99.5% network reduction |
 | Phase 11 | Phase 11 | Documentation, Polish & Interview Notes: Root README, Mermaid architecture, 3-minute demo script & INTERVIEW_QA | Complete system documentation, setup instructions, 4 design question answers, and 20-question deep-dive technical interview guide authored |
+| Phase 12 | Audit & Fix | Comprehensive bug hardening: SSRF browser route DNS resolution, non-consecutive failure counter reset, screenshot styling before cleanup, robots error TTL reduction to 5m, smart challenge classifier, subscription URL validation, and expanded smoke suite | All 102 tests pass, 5/5 smoke criteria pass, 0 lint warnings, all files strictly <250 lines |
 
 

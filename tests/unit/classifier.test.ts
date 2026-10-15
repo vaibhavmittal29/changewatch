@@ -117,4 +117,15 @@ describe('Classifier Engine (Criterion H & Design Question 1)', () => {
     expect(resOk.outcome).toBe('OK');
     expect(resOk.reason).toBe('success');
   });
+
+  it('does NOT false-positive block a normal page that embeds a recaptcha badge or form', () => {
+    const normalArticleWithRecaptcha = classifyCheck({
+      httpStatus: 200,
+      sanitizedDom: '<title>Blog Article on Distributed Systems</title><main><p>' + 'A'.repeat(800) + '</p></main><footer><div class="g-recaptcha" data-sitekey="xyz"></div></footer>',
+      rawText: 'Blog Article on Distributed Systems. Full detailed text of the blog article explaining consensus algorithms and raft protocols across 800 characters of meaningful content. ' + 'Long informative paragraphs '.repeat(30),
+    });
+    expect(normalArticleWithRecaptcha.outcome).toBe('OK');
+    expect(normalArticleWithRecaptcha.reason).toBe('success');
+  });
 });
+

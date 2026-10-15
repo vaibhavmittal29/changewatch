@@ -15,8 +15,8 @@ ChangeWatch monitors public web pages in a headless Playwright browser, isolates
 - **Visual Selector Picker:** Interactive full-page screenshot canvas overlay to click and assign CSS selectors for targeted watching or noise ignoring.
 - **Multi-Modal Diff Engine:** Character-, word-, and line-level Myers text diffs alongside pixelmatch visual screenshot diffs with dimension-normalization padding.
 - **Intelligent Noise Suppression:** Normalizes timestamps, incrementing view counters, rotating tokens/nonces, and ephemeral banners.
-- **Shared-Fetch Deduplication:** Evaluates multiple subscriptions on the same URL with one browser fetch, reducing network overhead by up to 99.5%.
-- **Zero False-Positive Outage Isolation:** Distinguishes content edits from 503 errors and CAPTCHA walls; triggers separate `DOWN` and `RECOVERED` alerts after configurable thresholds.
+- **Shared-Fetch Deduplication:** Consolidates multiple subscriptions on the same URL into a single browser fetch per cycle, substantially reducing network and compute overhead.
+- **Resilient Outage & Challenge Isolation:** Distinguishes content edits from 503 errors and CAPTCHA challenge pages; triggers separate `DOWN` and `RECOVERED` alerts after configurable consecutive failure thresholds.
 - **Site Politeness & RFC Egress Defense:** Origin-scoped robots.txt caching (24h), domain-level concurrency locks with a 10s quiet period, and strict SSRF guards blocking private/loopback/cloud metadata IPs.
 - **Guaranteed Alert Outbox:** Transactional outbox delivering to Discord Webhooks, Telegram Bots, SMTP Email, and In-App feeds with independent channel delivery and idempotent deduplication.
 
@@ -155,7 +155,7 @@ flowchart TD
 Every check is classified by the outcome engine as `OK`, `ERROR` (e.g. 503, 502, 404, network timeout), or `BLOCKED` (e.g. Cloudflare/reCAPTCHA challenges, 429 rate limit). Only `OK` checks are permitted to evaluate diffs or touch the baseline version history. Outages are tracked independently via `consecutive_failures`; after crossing the configured `OUTAGE_THRESHOLD` (default 3), a distinct `DOWN` alert is emitted. When the site recovers and returns an `OK` response, a `RECOVERED` alert is sent and the failure counter resets to zero.
 
 ### 2. 200 users monitoring the same URL?
-**One fetch. Network overhead is reduced by up to 99.5%.**  
+**One fetch. Network overhead is consolidated through shared captures.**  
 ChangeWatch decouples the concept of a **Target** (canonical URL and origin) from a **Subscription** (user alert rules, selectors, and sensitivity). When multiple users monitor the same URL with identical capture configurations, the scheduler groups all due subscriptions into **exactly one capture job** enforced by a database partial unique index (`uq_jobs_active_group`). The headless worker navigates to the page once, captures the sanitized DOM and screenshot, and records a single observation. The worker then evaluates each user's subscriptions in memory against that shared observation, applying individual selectors, noise filters, and sensitivity thresholds.
 
 ### 3. Pages that change on every load?
@@ -307,7 +307,7 @@ ChangeWatch operates under a zero-trust model for arbitrary URLs:
   - Show the **Unified Text Diff**: added lines highlighted in green, removed in red, with word-level inline precision.
   - Show the **Screenshot Diff**: pixelmatch visual diff highlighting changed regions in red with percentage change metrics.
 - Open **Settings** $\to$ **Notifications**: show the truthful outbox log recording delivery status states (`SENT_EXTERNAL`, `RECORDED_IN_APP`).
-- Conclude: *"All 200 monitors on this URL were updated with exactly 1 browser fetch, saving 99.5% of network bandwidth."*
+- Conclude: *"All 200 monitors on this URL were evaluated using a single shared browser capture, drastically reducing duplicate network traffic."*
 
 ---
 

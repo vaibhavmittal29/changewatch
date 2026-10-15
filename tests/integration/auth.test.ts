@@ -224,7 +224,7 @@ describe('Auth, Sessions, CSRF, Ownership Isolation, and Intervals (A1, A2, D)',
         'X-CSRF-Token': csrfA,
       },
       body: JSON.stringify({
-        url: 'https://alice-private-domain.com/status',
+        url: 'https://example.com/alice-status',
         name: "Alice's Monitor",
         interval_minutes: 15,
       }),

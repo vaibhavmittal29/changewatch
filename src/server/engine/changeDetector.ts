@@ -60,19 +60,11 @@ export interface DecisionResult {
  */
 function updateRollingWindow(db: Database, subId: string, currentWindowStr: string, code: 'U' | 'C'): { isNoisy: number; nextWindow: string } {
   let list: string[] = [];
-  try {
-    list = JSON.parse(currentWindowStr);
-  } catch {
-    list = [];
-  }
+  try { list = JSON.parse(currentWindowStr); } catch { list = []; }
   const next = [...list.slice(-9), code];
-  const cCount = next.filter(c => c === 'C').length;
-  const isNoisy = next.length >= 3 && (cCount / next.length) > 0.7 ? 1 : 0;
+  const isNoisy = next.length >= 3 && (next.filter(c => c === 'C').length / next.length) > 0.7 ? 1 : 0;
   const nextWindow = JSON.stringify(next);
-
-  db.prepare('UPDATE sub_state SET recent_checks_window = ?, is_noisy = ? WHERE subscription_id = ?')
-    .run(nextWindow, isNoisy, subId);
-
+  db.prepare('UPDATE sub_state SET recent_checks_window = ?, is_noisy = ? WHERE subscription_id = ?').run(nextWindow, isNoisy, subId);
   return { isNoisy, nextWindow };
 }
 
@@ -145,6 +137,9 @@ export function evaluateSubscriptionChange(
     enqueueNotificationForEvent(db, recId);
 
     db.prepare('UPDATE sub_state SET is_currently_down = 0, consecutive_failures = 0 WHERE subscription_id = ?')
+      .run(sub.id);
+  } else if (state.consecutive_failures > 0) {
+    db.prepare('UPDATE sub_state SET consecutive_failures = 0 WHERE subscription_id = ?')
       .run(sub.id);
   }
 

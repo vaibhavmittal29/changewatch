@@ -1,24 +1,29 @@
 ======================================================================
-ChangeWatch End-to-End Smoke Test Suite (Acceptance Matrix AH)
-Started at: 2026-10-15T07:22:03.597Z
+ChangeWatch End-to-End Smoke Test Suite (Matrix AH)
+Started at: 2026-10-15T13:25:34.100Z
 ======================================================================
 
-[1/4] Testing Real Change Detection on /demo/headline...
-  ✓ Initial check established Version 1 baseline (0 alerts sent)
-  ✓ Candidate change observed on check 1 (pending candidate recorded, 0 alerts sent)
+[1/5] Testing Real Change Detection on /demo/headline...
   ✓ Version 2 confirmed on consecutive check with exactly 1 CHANGE alert in outbox
 
-[2/4] Testing Noise Normalization Suppression (/demo/clock, /demo/counter, /demo/token)...
+[2/5] Testing Noise Normalization Suppression (/demo/clock, /demo/counter, /demo/token)...
   ✓ Clock, Counter, and Token fixtures: 4 checks each created exactly 1 baseline version and 0 alerts
 
-[3/4] Testing Outage & CAPTCHA Isolation (/demo/503 and /demo/captcha)...
-  ✓ 503 Service Unavailable and Fake CAPTCHA leave baseline and versions completely untouched
+[3/5] Testing Outage & CAPTCHA Isolation (/demo/503 and /demo/captcha)...
+  ✓ 503 and CAPTCHA leave baseline and versions completely untouched
 
-[4/4] Testing Outage Alert & Recovery Flow (Threshold = 3)...
-  ✓ 3 consecutive failures triggered DOWN event (consecutive_failures=3)
-  ✓ Subsequent OK check triggered RECOVERED event and reset failure counters to 0
+[4/5] Testing Failure Reset on OK & Consecutive Outage Flow...
+  ✓ 2 failures followed by 1 OK check cleanly resets consecutive_failures to 0 (no false DOWN alert)
+  ✓ 3 consecutive failures successfully triggered DOWN alert
+  ✓ Subsequent OK check triggered RECOVERED event and reset counters to 0
+
+[5/5] Testing Browser SSRF & Private Redirect Defense...
+  ✓ Browser route interception successfully aborted redirect to private IP (page.goto: net::ERR_CONNECTION_TIMED_OUT at http://127.0.0.1:4000/demo/redirect-private
+Call log:
+[2m  - navigating to "http://127.0.0.1:4000/demo/redirect-private", waiting until "domcontentloaded"[22m
+)
 
 ======================================================================
-ALL 4 SMOKE TEST SUITE CRITERIA PASSED SUCCESSFULLY!
-Finished at: 2026-10-15T07:22:26.191Z
+ALL 5 SMOKE TEST SUITE CRITERIA PASSED SUCCESSFULLY!
+Finished at: 2026-10-15T13:26:19.170Z
 ======================================================================

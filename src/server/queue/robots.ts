@@ -17,7 +17,8 @@ interface RobotsCacheRow {
   expires_at: string;
 }
 
-const ROBOTS_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours per RFC 9309 & specification
+const ROBOTS_SUCCESS_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours per RFC 9309 for valid responses
+const ROBOTS_ERROR_CACHE_TTL_MS = 5 * 60 * 1000;          // 5 minutes for transient 5xx or network errors
 const USER_AGENT_TOKEN = 'ChangeWatch';
 
 /**
@@ -66,7 +67,8 @@ export async function checkRobotsPermission(
     rawContent = '';
   }
 
-  const expiresAtIso = new Date(now + ROBOTS_CACHE_TTL_MS).toISOString();
+  const ttl = (httpStatus >= 500 || httpStatus === 0) ? ROBOTS_ERROR_CACHE_TTL_MS : ROBOTS_SUCCESS_CACHE_TTL_MS;
+  const expiresAtIso = new Date(now + ttl).toISOString();
 
   // 3. Upsert into robots_cache
   db.prepare(`
