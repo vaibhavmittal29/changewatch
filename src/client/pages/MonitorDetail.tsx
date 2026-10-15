@@ -1,53 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 
-interface VersionItem {
-  id: string;
-  version_number: number;
-  content_hash: string;
-  change_summary: string | null;
-  created_at: string;
-  observation_id: string;
-  screenshot_path: string | null;
-}
-
-interface EventItem {
-  id: string;
-  event_type: 'CHANGE' | 'DOWN' | 'RECOVERED';
-  summary: string;
-  suppressed: number;
-  created_at: string;
-  previous_version_id: string | null;
-  current_version_id: string | null;
-}
-
-interface CheckRunItem {
-  id: string;
-  outcome: 'OK' | 'ERROR' | 'BLOCKED';
-  reason: string | null;
-  http_status: number | null;
-  duration_ms: number;
-  was_deduplicated: number;
-  created_at: string;
-}
-
-interface MonitorDetailProps {
-  subscriptionId: string;
-  csrfToken: string;
-  onBack: () => void;
-  onCompare: (fromVersionId: string, toVersionId: string) => void;
-}
-
-interface SubDetail {
-  id: string;
-  name: string;
-  canonical_url: string;
-  hostname: string;
-  origin: string;
-  interval_minutes: number;
-  sensitivity: string;
-  is_paused: number;
-  is_noisy: number;
-}
+interface VersionItem { id: string; version_number: number; content_hash: string; change_summary: string | null; created_at: string; observation_id: string; screenshot_path: string | null; }
+interface EventItem { id: string; event_type: 'CHANGE' | 'DOWN' | 'RECOVERED'; summary: string; suppressed: number; created_at: string; previous_version_id: string | null; current_version_id: string | null; }
+interface CheckRunItem { id: string; outcome: 'OK' | 'ERROR' | 'BLOCKED'; reason: string | null; http_status: number | null; duration_ms: number; was_deduplicated: number; created_at: string; }
+interface MonitorDetailProps { subscriptionId: string; csrfToken: string; onBack: () => void; onCompare: (fromVersionId: string, toVersionId: string) => void; }
+interface SubDetail { id: string; name: string; canonical_url: string; hostname: string; origin: string; interval_minutes: number; sensitivity: string; is_paused: number; is_noisy: number; }
 
 export const MonitorDetail: React.FC<MonitorDetailProps> = ({
   subscriptionId,
@@ -145,6 +102,12 @@ export const MonitorDetail: React.FC<MonitorDetailProps> = ({
           >
             {actionLoading ? 'Checking...' : 'Check Now'}
           </button>
+          <a
+            href={`/picker?url=${encodeURIComponent(sub.canonical_url)}&id=${sub.id}`}
+            className="px-3 py-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-emerald-400 rounded-xl border border-slate-700 transition"
+          >
+            Visual Picker ↗
+          </a>
 
           {versions.length >= 2 && (
             <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 p-1.5 rounded-xl">

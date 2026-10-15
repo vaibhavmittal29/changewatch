@@ -22,6 +22,8 @@ export const CaptureConfigSchema = z.object({
 
 export type CaptureConfig = z.infer<typeof CaptureConfigSchema>;
 
+export const DEFAULT_CAPTURE_CONFIG: CaptureConfig = CaptureConfigSchema.parse({});
+
 /**
  * Sorts object keys recursively and drops undefined values so key order
  * never alters the output string or its resulting cryptographic hash.

@@ -10,6 +10,7 @@ import { notificationsRouter } from './routes/notifications.js';
 import { dashboardRouter } from './routes/dashboard.js';
 import { subscriptionActionsRouter } from './routes/subscriptionActions.js';
 import { demoRouter } from './routes/demo.js';
+import { pickerRouter } from './routes/picker.js';
 
 export function createApp() {
   const app = express();
@@ -38,6 +39,7 @@ export function createApp() {
   app.use('/api/diff', requireAuth, diffRouter);
   app.use('/api', requireAuth, notificationsRouter);
   app.use('/api/demo', requireAuth, demoRouter);
+  app.use('/api/picker', requireAuth, pickerRouter);
 
   return app;
 }

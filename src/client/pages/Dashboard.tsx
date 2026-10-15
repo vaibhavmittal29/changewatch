@@ -216,25 +216,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ csrfToken, onSelectMonitor
                     <div className="text-[11px] text-slate-500">{m.version_count} version{m.version_count === 1 ? '' : 's'}</div>
                   </td>
                   <td className="py-3.5 px-4 text-right space-x-2">
-                    <button
-                      onClick={() => handleCheckNow(m.id)}
-                      disabled={actionLoadingId === m.id}
-                      className="px-2.5 py-1 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 transition cursor-pointer"
-                    >
+                    <button onClick={() => handleCheckNow(m.id)} disabled={actionLoadingId === m.id} className="px-2.5 py-1 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 transition cursor-pointer">
                       Check Now
                     </button>
-                    <button
-                      onClick={() => handleTogglePause(m.id, m.is_paused)}
-                      disabled={actionLoadingId === m.id}
-                      className="px-2.5 py-1 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 transition cursor-pointer"
-                    >
+                    <button onClick={() => handleTogglePause(m.id, m.is_paused)} disabled={actionLoadingId === m.id} className="px-2.5 py-1 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 transition cursor-pointer">
                       {m.is_paused ? 'Resume' : 'Pause'}
                     </button>
-                    <button
-                      onClick={() => handleDelete(m.id, m.name)}
-                      disabled={actionLoadingId === m.id}
-                      className="px-2.5 py-1 text-xs bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 rounded-lg border border-rose-800/40 transition cursor-pointer"
-                    >
+                    <button onClick={() => handleDelete(m.id, m.name)} disabled={actionLoadingId === m.id} className="px-2.5 py-1 text-xs bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 rounded-lg border border-rose-800/40 transition cursor-pointer">
                       Delete
                     </button>
                   </td>

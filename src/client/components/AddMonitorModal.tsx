@@ -41,11 +41,7 @@ export const AddMonitorModal: React.FC<AddMonitorModalProps> = ({
         sensitivity,
         include_selectors: includeSelectors ? includeSelectors.split('\n').map(s => s.trim()).filter(Boolean) : [],
         ignore_selectors: ignoreSelectors ? ignoreSelectors.split('\n').map(s => s.trim()).filter(Boolean) : [],
-        noise_filters: {
-          timestamps: filterTimestamps,
-          counters: filterCounters,
-          tokens: filterTokens,
-        },
+        noise_filters: { timestamps: filterTimestamps, counters: filterCounters, tokens: filterTokens },
       };
 
       const res = await fetch('/api/subscriptions', {
@@ -178,9 +174,14 @@ export const AddMonitorModal: React.FC<AddMonitorModalProps> = ({
           {showAdvanced && (
             <div className="space-y-3 pt-2 border-t border-slate-800 text-xs">
               <div>
-                <label className="block font-medium text-slate-300 mb-1">
-                  Watch Selectors (one per line, e.g. #pricing-table)
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="font-medium text-slate-300">Watch Selectors (e.g. #pricing-table)</label>
+                  {url && (
+                    <a href={`/picker?url=${encodeURIComponent(url)}`} className="text-[11px] text-emerald-400 hover:underline">
+                      Launch Picker ↗
+                    </a>
+                  )}
+                </div>
                 <textarea
                   rows={2}
                   value={includeSelectors}

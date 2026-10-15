@@ -5,6 +5,7 @@ import { MonitorDetail } from './pages/MonitorDetail';
 import { Compare } from './pages/Compare';
 import { Settings } from './pages/Settings';
 import { TestRig } from './pages/TestRig';
+import { VisualPicker } from './pages/VisualPicker';
 
 interface User {
   id: string;
@@ -13,7 +14,7 @@ interface User {
   digestEnabled: number;
 }
 
-type ViewMode = 'dashboard' | 'detail' | 'compare' | 'settings' | 'test-rig';
+type ViewMode = 'dashboard' | 'detail' | 'compare' | 'settings' | 'test-rig' | 'picker';
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -22,12 +23,20 @@ export default function App() {
   const [currentView, setCurrentView] = useState<ViewMode>('dashboard');
   const [selectedMonitorId, setSelectedMonitorId] = useState<string | null>(null);
   const [compareVersions, setCompareVersions] = useState<{ from?: string; to?: string }>({});
+  const [pickerTarget, setPickerTarget] = useState<{ url?: string; subscriptionId?: string }>({});
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('from') && params.get('to')) {
       setCompareVersions({ from: params.get('from')!, to: params.get('to')! });
       setCurrentView('compare');
+    }
+    if (window.location.pathname === '/picker' || params.get('view') === 'picker') {
+      setPickerTarget({
+        url: params.get('url') || undefined,
+        subscriptionId: params.get('id') || undefined,
+      });
+      setCurrentView('picker');
     }
 
     fetch('/api/auth/me')
@@ -133,6 +142,14 @@ export default function App() {
               >
                 Test Rig
               </button>
+              <button
+                onClick={() => setCurrentView('picker')}
+                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition cursor-pointer ${
+                  currentView === 'picker' ? 'bg-slate-800 text-emerald-400' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Visual Picker
+              </button>
             </nav>
           </div>
 
@@ -190,6 +207,16 @@ export default function App() {
           <TestRig
             csrfToken={csrfToken}
             onMonitorCreated={() => setCurrentView('dashboard')}
+          />
+        )}
+
+        {currentView === 'picker' && (
+          <VisualPicker
+            csrfToken={csrfToken}
+            initialUrl={pickerTarget.url}
+            subscriptionId={pickerTarget.subscriptionId}
+            onBack={() => setCurrentView('dashboard')}
+            onSaved={() => setCurrentView('dashboard')}
           />
         )}
       </main>
