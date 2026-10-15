@@ -166,17 +166,28 @@ async function main() {
 
     await browser.close();
     console.log('[Phase 6 UI Verification] All UI screenshots captured successfully.');
+  } catch (err) {
+    console.error('[Phase 6 UI Verification] Fatal error:', err);
+    process.exitCode = 1;
   } finally {
-    await vite.close();
-    if (server) (server as Server).close();
+    console.log('[Cleanup] Closing Vite...');
+    if (vite) {
+      try { await vite.close(); } catch {}
+    }
+    console.log('[Cleanup] Closing server...');
+    if (server) {
+      try {
+        (server as any).closeAllConnections?.();
+        await new Promise<void>(resolve => (server as Server).close(() => resolve()));
+      } catch {}
+    }
+    console.log('[Cleanup] Closing database...');
     closeDb();
     if (fs.existsSync(testDbPath)) {
       try { fs.unlinkSync(testDbPath); } catch {}
     }
+    process.exit(process.exitCode ?? 0);
   }
 }
 
-main().catch(err => {
-  console.error('[Phase 6 UI Verification] Fatal error:', err);
-  process.exit(1);
-});
+main();

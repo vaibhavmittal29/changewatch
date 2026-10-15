@@ -5,6 +5,7 @@ import { getDb } from '../db/index.js';
 import { captureFingerprint } from '../capture/captureConfig.js';
 import { canonicalizeUrl } from '../capture/canonicalizeUrl.js';
 import { env } from '../config.js';
+import { deleteSubscriptionCascade } from '../maintenance/deleteFlow.js';
 
 export const subscriptionsRouter = Router();
 
@@ -40,20 +41,9 @@ const UpdateSubscriptionSchema = z.object({
   is_paused: z.boolean().optional(),
 });
 
-/**
- * Validates whether the interval is acceptable.
- * Enforces 15–1440 min generally, with DEV_MIN_INTERVAL_MINUTES override for demo origin only.
- */
 export function validateInterval(intervalMinutes: number, urlOrigin: string): boolean {
-  const isDemoOrigin = env.ALLOW_LOCAL_DEMO && (
-    urlOrigin.includes(`localhost:${env.DEMO_PORT}`) ||
-    urlOrigin.includes(`127.0.0.1:${env.DEMO_PORT}`)
-  );
-
-  const minInterval = (isDemoOrigin && env.DEV_MIN_INTERVAL_MINUTES)
-    ? env.DEV_MIN_INTERVAL_MINUTES
-    : 15;
-
+  const isDemo = env.ALLOW_LOCAL_DEMO && (urlOrigin.includes(`localhost:${env.DEMO_PORT}`) || urlOrigin.includes(`127.0.0.1:${env.DEMO_PORT}`));
+  const minInterval = (isDemo && env.DEV_MIN_INTERVAL_MINUTES) ? env.DEV_MIN_INTERVAL_MINUTES : 15;
   return intervalMinutes >= minInterval && intervalMinutes <= 1440;
 }
 
@@ -134,18 +124,13 @@ subscriptionsRouter.post('/', (req, res) => {
   const now = new Date().toISOString();
 
   const insertTx = db.transaction(() => {
-    // Insert or find target
     let target = db.prepare('SELECT id FROM targets WHERE canonical_url = ?').get(canonicalInfo.canonicalUrl) as { id: string } | undefined;
     if (!target) {
       const targetId = crypto.randomUUID();
-      db.prepare(`
-        INSERT INTO targets (id, canonical_url, hostname, origin, created_at)
-        VALUES (?, ?, ?, ?, ?)
-      `).run(targetId, canonicalInfo.canonicalUrl, canonicalInfo.hostname, canonicalInfo.origin, now);
+      db.prepare('INSERT INTO targets (id, canonical_url, hostname, origin, created_at) VALUES (?, ?, ?, ?, ?)').run(targetId, canonicalInfo.canonicalUrl, canonicalInfo.hostname, canonicalInfo.origin, now);
       target = { id: targetId };
     }
 
-    // Insert subscription with next_check_at = now
     db.prepare(`
       INSERT INTO subscriptions (
         id, user_id, target_id, name, interval_minutes, next_check_at,
@@ -154,62 +139,25 @@ subscriptionsRouter.post('/', (req, res) => {
         learned_ignore_patterns, keyword_rules, is_paused, created_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '[]', '[]', 0, ?)
     `).run(
-      subscriptionId,
-      userId,
-      target.id,
-      name,
-      interval_minutes,
-      now, // immediate check
-      JSON.stringify(config),
-      fingerprint,
-      sensitivity,
-      JSON.stringify(include_selectors),
-      JSON.stringify(ignore_selectors),
-      JSON.stringify(noise_filters),
-      now
+      subscriptionId, userId, target.id, name, interval_minutes, now,
+      JSON.stringify(config), fingerprint, sensitivity,
+      JSON.stringify(include_selectors), JSON.stringify(ignore_selectors),
+      JSON.stringify(noise_filters), now
     );
 
-    // Initialize sub_state
-    db.prepare(`
-      INSERT INTO sub_state (subscription_id, consecutive_failures, is_currently_down, recent_checks_window, is_noisy)
-      VALUES (?, 0, 0, '[]', 0)
-    `).run(subscriptionId);
-
+    db.prepare('INSERT INTO sub_state (subscription_id, consecutive_failures, is_currently_down, recent_checks_window, is_noisy) VALUES (?, 0, 0, \'[]\', 0)').run(subscriptionId);
     return target.id;
   });
 
   const targetId = insertTx();
-
   res.status(201).json({
-    id: subscriptionId,
-    name,
-    target_id: targetId,
-    canonical_url: canonicalInfo.canonicalUrl,
-    interval_minutes,
-    sensitivity,
-    capture_fingerprint: fingerprint,
-    next_check_at: now,
-    is_paused: 0,
-    created_at: now,
+    id: subscriptionId, name, target_id: targetId, canonical_url: canonicalInfo.canonicalUrl,
+    interval_minutes, sensitivity, capture_fingerprint: fingerprint,
+    next_check_at: now, is_paused: 0, created_at: now,
   });
 });
 
-interface SubscriptionDbRow {
-  id: string;
-  user_id: string;
-  target_id: string;
-  name: string;
-  interval_minutes: number;
-  next_check_at: string;
-  capture_config: string;
-  capture_fingerprint: string;
-  sensitivity: string;
-  include_selectors: string;
-  ignore_selectors: string;
-  noise_filters: string;
-  is_paused: number;
-  created_at: string;
-}
+type SubRow = Record<string, unknown>;
 
 // PATCH /api/subscriptions/:id (ownership isolation enforced)
 subscriptionsRouter.patch('/:id', (req, res) => {
@@ -217,7 +165,7 @@ subscriptionsRouter.patch('/:id', (req, res) => {
   const userId = req.user!.id;
   const db = getDb();
 
-  const existing = db.prepare('SELECT * FROM subscriptions WHERE id = ? AND user_id = ?').get(id, userId) as SubscriptionDbRow | undefined;
+  const existing = db.prepare('SELECT * FROM subscriptions WHERE id = ? AND user_id = ?').get(id, userId) as SubRow | undefined;
   if (!existing) {
     res.status(404).json({ error: 'Subscription not found' });
     return;
@@ -280,19 +228,16 @@ subscriptionsRouter.patch('/:id', (req, res) => {
   res.json({ ok: true, id });
 });
 
-// DELETE /api/subscriptions/:id (ownership isolation enforced)
+// DELETE /api/subscriptions/:id (cascades sub, orphans, screenshots, and target)
 subscriptionsRouter.delete('/:id', (req, res) => {
   const { id } = req.params;
   const userId = req.user!.id;
-  const db = getDb();
 
-  const existing = db.prepare('SELECT id FROM subscriptions WHERE id = ? AND user_id = ?').get(id, userId);
-  if (!existing) {
+  const result = deleteSubscriptionCascade(id, userId);
+  if (!result) {
     res.status(404).json({ error: 'Subscription not found' });
     return;
   }
 
-  db.prepare('DELETE FROM subscriptions WHERE id = ? AND user_id = ?').run(id, userId);
-
-  res.json({ ok: true });
+  res.json({ ok: true, details: result });
 });

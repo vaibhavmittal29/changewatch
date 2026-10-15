@@ -7,6 +7,9 @@ import { subscriptionsRouter } from './routes/subscriptions.js';
 
 import { diffRouter } from './routes/diff.js';
 import { notificationsRouter } from './routes/notifications.js';
+import { dashboardRouter } from './routes/dashboard.js';
+import { subscriptionActionsRouter } from './routes/subscriptionActions.js';
+import { demoRouter } from './routes/demo.js';
 
 export function createApp() {
   const app = express();
@@ -30,12 +33,11 @@ export function createApp() {
 
   // Authenticated API routes
   app.use('/api/subscriptions', requireAuth, subscriptionsRouter);
+  app.use('/api', requireAuth, subscriptionActionsRouter);
+  app.use('/api', requireAuth, dashboardRouter);
   app.use('/api/diff', requireAuth, diffRouter);
   app.use('/api', requireAuth, notificationsRouter);
-  app.get('/api/versions/:id', requireAuth, (req, res, next) => {
-    req.url = `/version/${req.params.id}`;
-    diffRouter(req, res, next);
-  });
+  app.use('/api/demo', requireAuth, demoRouter);
 
   return app;
 }
