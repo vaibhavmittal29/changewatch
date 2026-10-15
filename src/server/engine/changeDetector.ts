@@ -6,6 +6,7 @@ import { normalizeText, hashContent } from './normalize.js';
 import { calculateDiff, type SensitivityLevel } from './diffSummary.js';
 import { getActiveVersion, commitNextVersion, createBaselineVersion, type MonitorVersionRow } from './versions.js';
 import type { NoiseFilterConfig } from './noiseFilters.js';
+import { enqueueNotificationForEvent } from '../notifications/outbox.js';
 
 export interface SubscriptionRecord {
   id: string;
@@ -95,6 +96,7 @@ export function recordCheckFailure(
       INSERT INTO change_events (id, subscription_id, current_version_id, event_type, summary, created_at)
       VALUES (?, ?, ?, 'DOWN', ?, ?)
     `).run(eventId, subId, state.active_version_id, `Site outage detected: ${reason}`, nowIso);
+    enqueueNotificationForEvent(db, eventId);
 
     db.prepare(`
       UPDATE sub_state
@@ -119,16 +121,11 @@ export function evaluateSubscriptionChange(
 ): DecisionResult {
   const nowIso = new Date(nowMs).toISOString();
 
-  // Parse selectors and filters
-  let inc: string[] = [];
-  let ign: string[] = [];
-  let filters: NoiseFilterConfig = {};
-  let learned: string[] = [];
-
-  try { inc = JSON.parse(sub.include_selectors); } catch { inc = []; }
-  try { ign = JSON.parse(sub.ignore_selectors); } catch { ign = []; }
-  try { filters = JSON.parse(sub.noise_filters); } catch { filters = {}; }
-  try { learned = JSON.parse(sub.learned_ignore_patterns); } catch { learned = []; }
+  const safeParse = <T>(val: string, fallback: T): T => { try { return JSON.parse(val) as T; } catch { return fallback; } };
+  const inc = safeParse<string[]>(sub.include_selectors, []);
+  const ign = safeParse<string[]>(sub.ignore_selectors, []);
+  const filters = safeParse<NoiseFilterConfig>(sub.noise_filters, {});
+  const learned = safeParse<string[]>(sub.learned_ignore_patterns, []);
 
   // 1. Single extraction contract + full normalizer
   const extracted = extractText(obs.sanitized_dom, inc, ign);
@@ -145,6 +142,7 @@ export function evaluateSubscriptionChange(
       INSERT INTO change_events (id, subscription_id, current_version_id, event_type, summary, created_at)
       VALUES (?, ?, ?, 'RECOVERED', 'Target has recovered and is responding normally', ?)
     `).run(recId, sub.id, state.active_version_id, nowIso);
+    enqueueNotificationForEvent(db, recId);
 
     db.prepare('UPDATE sub_state SET is_currently_down = 0, consecutive_failures = 0 WHERE subscription_id = ?')
       .run(sub.id);
@@ -228,6 +226,7 @@ export function evaluateSubscriptionChange(
     eventId, sub.id, activeVersion.id, newVersion.id,
     isSuppressed ? 1 : 0, diffResult.summary, nowIso
   );
+  enqueueNotificationForEvent(db, eventId);
 
   db.prepare(`
     UPDATE sub_state

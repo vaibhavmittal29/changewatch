@@ -8,6 +8,7 @@ import { env } from './config.js';
 
 import { Scheduler } from './queue/scheduler.js';
 import { WorkerPool } from './queue/worker.js';
+import { NotificationWorker } from './notifications/worker.js';
 import { startDemoServer } from './demo/demoServer.js';
 import { closeBrowser } from './capture/playwrightCapture.js';
 
@@ -25,6 +26,10 @@ async function startServer() {
   const workerPool = new WorkerPool(db);
   workerPool.start();
   console.log(`[WorkerPool] Worker pool started (${env.WORKER_CONCURRENCY} workers)`);
+
+  const notificationWorker = new NotificationWorker(db);
+  notificationWorker.start();
+  console.log('[NotificationWorker] Notification outbox worker started');
 
   // 3. Start local demo server if enabled
   if (env.ALLOW_LOCAL_DEMO) {
@@ -63,6 +68,7 @@ async function startServer() {
     console.log('[ChangeWatch] Shutting down gracefully...');
     scheduler.stop();
     workerPool.stop();
+    notificationWorker.stop();
     await closeBrowser().catch(() => {});
     server.close(() => {
       process.exit(0);
