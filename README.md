@@ -2,8 +2,72 @@
 
 > **Intelligent, Resilient Website Change Detector**  
 > Headless browser monitoring with noise suppression, shared-fetch deduplication, and truthful multi-channel alerting.
+>
+> **Author:** [vaibhavmittal29](https://github.com/vaibhavmittal29) (Vaibhav Mittal) • **License:** [MIT](./LICENSE)
 
 ChangeWatch monitors public web pages in a headless Playwright browser, isolates meaningful text and visual changes, filters out dynamic noise (clocks, counters, rotating ads, random tokens), and delivers alerts via Discord, Telegram, Email, and an in-app outbox. It **never** mistakes a 503 outage or CAPTCHA challenge for a content change, fetches a shared URL only once no matter how many users monitor it, and rigorously enforces site politeness (robots.txt, domain concurrency locks, and quiet periods).
+
+---
+
+## 🌟 Key Features
+
+- **Headless Browser Monitoring:** Fully renders JavaScript-heavy SPAs and dynamic pages with Playwright Chromium.
+- **Visual Selector Picker:** Interactive full-page screenshot canvas overlay to click and assign CSS selectors for targeted watching or noise ignoring.
+- **Multi-Modal Diff Engine:** Character-, word-, and line-level Myers text diffs alongside pixelmatch visual screenshot diffs with dimension-normalization padding.
+- **Intelligent Noise Suppression:** Normalizes timestamps, incrementing view counters, rotating tokens/nonces, and ephemeral banners.
+- **Shared-Fetch Deduplication:** Evaluates multiple subscriptions on the same URL with one browser fetch, reducing network overhead by up to 99.5%.
+- **Zero False-Positive Outage Isolation:** Distinguishes content edits from 503 errors and CAPTCHA walls; triggers separate `DOWN` and `RECOVERED` alerts after configurable thresholds.
+- **Site Politeness & RFC Egress Defense:** Origin-scoped robots.txt caching (24h), domain-level concurrency locks with a 10s quiet period, and strict SSRF guards blocking private/loopback/cloud metadata IPs.
+- **Guaranteed Alert Outbox:** Transactional outbox delivering to Discord Webhooks, Telegram Bots, SMTP Email, and In-App feeds with independent channel delivery and idempotent deduplication.
+
+---
+
+## 🛠️ Tech Stack
+
+- **Backend / API:** Node.js, TypeScript (Strict), Express 5
+- **Headless Browser:** Playwright (Chromium)
+- **DOM & Text Extraction:** Cheerio (Single Extraction Contract)
+- **Diff Algorithms:** Myers Diff (`diff`), Pixelmatch visual diffing, PNGjs
+- **Database:** SQLite via `better-sqlite3` (WAL mode, foreign keys enabled)
+- **Frontend / UI:** React 19, TypeScript, Tailwind CSS, Vite (SPA served directly via Express middleware)
+- **Validation & Crypto:** Zod (Strict schemas), Node.js `crypto` (PBKDF2, SHA-256, AES-256-GCM)
+- **Networking & Politeness:** `ipaddr.js` (SSRF IP filter), `robots-parser`
+
+---
+
+## 📁 Folder Structure
+
+```text
+changewatch/
+├── src/
+│   ├── client/                   # React 19 + Tailwind SPA
+│   │   ├── components/           # Navbar, DiffViewer, PickerOverlay, StatusBadge, Modal
+│   │   ├── pages/                # Dashboard, MonitorDetail, Compare, Picker, Settings, TestRig
+│   │   ├── App.tsx & main.tsx    # Client routing & mounting
+│   │   └── index.css             # Tailwind base styles
+│   └── server/                   # Express 5 + Node.js API
+│       ├── index.ts              # Server bootstrap & Vite middleware integration
+│       ├── config.ts             # Zod environment variable parsing
+│       ├── app.ts                # Express application definition
+│       ├── auth/                 # PBKDF2 hashing, sessions, and CSRF token protection
+│       ├── capture/              # Playwright capture, SSRF validator, Cheerio extraction, classifier
+│       ├── db/                   # SQLite database connection, schema DDL, and migrations
+│       ├── demo/                 # Local 16-fixture demo server (port 4000)
+│       ├── diff/                 # Myers text diff & pixelmatch image diff engines
+│       ├── engine/               # Normalization, sensitivity, confirmation state machine, versions
+│       ├── notifications/        # Outbox worker, AES-256-GCM encryption, Discord/Telegram/Email
+│       ├── queue/                # SQLite durable job queue, scheduler, and domain politeness
+│       └── routes/               # API endpoints (auth, subscriptions, diff, picker, dashboard)
+├── scripts/                      # CLI tools (seed, capture, smoke, benchmark, verify-ui)
+├── tests/                        # Vitest test suites (unit & integration)
+├── docs/                         # Technical documentation & interview guide
+│   ├── implementation_plan.md    # Architecture specification & roadmap
+│   ├── INTERVIEW_QA.md           # 20-question deep dive interview guide
+│   └── evidence/                 # Visual test proof & benchmark outputs
+├── package.json                  # Dependencies & npm scripts
+├── tsconfig.json                 # Strict TypeScript configuration
+└── vite.config.ts                # Vite frontend bundler config
+```
 
 ---
 
@@ -87,23 +151,23 @@ flowchart TD
 ## 🎯 The Four Key Design Questions
 
 ### 1. Outage or CAPTCHA a change?
-**No. Content changes and service disruptions are strictly isolated.**
+**No. Content changes and service disruptions are strictly isolated.**  
 Every check is classified by the outcome engine as `OK`, `ERROR` (e.g. 503, 502, 404, network timeout), or `BLOCKED` (e.g. Cloudflare/reCAPTCHA challenges, 429 rate limit). Only `OK` checks are permitted to evaluate diffs or touch the baseline version history. Outages are tracked independently via `consecutive_failures`; after crossing the configured `OUTAGE_THRESHOLD` (default 3), a distinct `DOWN` alert is emitted. When the site recovers and returns an `OK` response, a `RECOVERED` alert is sent and the failure counter resets to zero.
 
 ### 2. 200 users monitoring the same URL?
-**One fetch. Network overhead is reduced by up to 99.5%.**
+**One fetch. Network overhead is reduced by up to 99.5%.**  
 ChangeWatch decouples the concept of a **Target** (canonical URL and origin) from a **Subscription** (user alert rules, selectors, and sensitivity). When multiple users monitor the same URL with identical capture configurations, the scheduler groups all due subscriptions into **exactly one capture job** enforced by a database partial unique index (`uq_jobs_active_group`). The headless worker navigates to the page once, captures the sanitized DOM and screenshot, and records a single observation. The worker then evaluates each user's subscriptions in memory against that shared observation, applying individual selectors, noise filters, and sensitivity thresholds.
 
 ### 3. Pages that change on every load?
-**Multi-layered defense suppresses false positives.**
+**Multi-layered defense suppresses false positives.**  
 - **Tier 1 — CSS Selector Scoping**: The Visual Picker allows users to select exact target containers while ignoring dynamic widgets (e.g. banner ads, sidebars).
 - **Tier 2 — Deterministic Normalization**: Regex-based normalizers strip dynamic timestamps, auto-incrementing view counters, and random hex/UUID session tokens.
-- **Tier 3 — Sensitivity Thresholds**: Myers line diff calculates `changedPct`. Low sensitivity requires $\ge 20\%$ line drift, and balanced requires $\ge 5\%$ before flagging a candidate.
-- **Tier 4 — Two-Check Confirmation**: A detected change is recorded as a *candidate* and triggers an immediate fast re-check after `CONFIRM_DELAY` (default 2 min). Only if the second check confirms the identical content hash is a new version committed and an alert emitted.
-- **Tier 5 — Cooldown & Noisy Flags**: Consecutive alerts within `COOLDOWN_HOURS` are suppressed into a daily digest, and pages with $>70\%$ unstable checks are automatically flagged `is_noisy`.
+- **Tier 3 — Sensitivity Threshold**: Diff line changes must cross user-defined thresholds (`low`: 1 line, `balanced`: 3 lines, `high`: 5 lines).
+- **Tier 4 — Two-Check Confirmation**: Unstable candidate changes must be observed across two consecutive checks before triggering an alert (`CONFIRM_DELAY_MS`).
+- **Tier 5 — Alert Cooldown & Noisy Page Flagging**: Immediate alerts are throttled to once per 6 hours (suppressed events go to daily digests), and monitors triggering in >70% of checks are flagged `is_noisy`.
 
 ### 4. Not hammering sites (Politeness)?
-**Rigorous origin-scoped rate limiting and respect for web standards.**
+**Rigorous origin-scoped rate limiting and respect for web standards.**  
 - **Minimum Check Interval**: Enforced minimum of 15 minutes to 24 hours (with dev overrides restricted strictly to localhost demo origins).
 - **Domain Locks & Quiet Periods**: At most one active browser navigation per domain at a time, followed by a mandatory 10-second quiet period (`DOMAIN_GAP_MS`).
 - **Cached robots.txt**: Fetches and parses `robots.txt` per origin (separating HTTP and HTTPS), caching directives for 24 hours. `Disallow` rules immediately transition checks to `BLOCKED`.
@@ -122,7 +186,7 @@ ChangeWatch decouples the concept of a **Target** (canonical URL and origin) fro
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/vinnovateit/changewatch.git
+git clone https://github.com/vaibhavmittal29/changewatch.git
 cd changewatch
 
 # 2. Install dependencies
@@ -134,21 +198,25 @@ npx playwright install chromium
 # 4. Copy environment configuration
 cp .env.example .env
 
-# 5. Initialize SQLite schema & seed demo administrator
+# 5. Initialize SQLite schema & seed demo user
 npm run seed
 ```
 
 ### Running the Application
 
 ```bash
-# Start ChangeWatch (Express API + Vite Frontend + Background Scheduler & Workers)
+# Development mode (starts Express API, background workers, demo fixtures, and Vite hot-reload)
 npm run dev
+
+# Or build for production and run
+npm run build
+npm start
 ```
 
 Open `http://localhost:3000` in your browser.  
-Default demo credentials:
-- **Email**: `admin@changewatch.local`
-- **Password**: `ChangeWatch2026!`
+Default demo credentials (created by `npm run seed`):
+- **Email**: `demo@changewatch.local`
+- **Password**: `Password123!`
 
 ---
 
@@ -169,34 +237,26 @@ npm run lint
 # Run end-to-end smoke test on the 16 demo server fixtures
 npm run smoke
 
-# Run 200-subscription scalability and shared-fetch benchmark
+# Run 200-subscription shared-fetch scalability benchmark
 npm run benchmark
+
+# Run Playwright UI walkthrough
+npx tsx scripts/verify-phase8-ui.ts
 ```
-
-### Scalability Benchmark Results (`scripts/benchmark.ts`)
-
-| Metric | $N = 20$ Subscriptions (MUST) | $N = 200$ Subscriptions (STRONG) |
-|---|---|---|
-| **Due Subscriptions** | 20 | 200 |
-| **Grouped Jobs Enqueued** | **1** | **1** |
-| **Top-Level Navigations** | **1** | **1** |
-| **Dedup Factor** | **20:1** (20x savings) | **200:1** (200x savings) |
-| **Fetch Overhead Reduction** | **95.0%** | **99.5%** |
-| **Scheduler Latency** | 0.45 ms | 0.42 ms |
-| **Execution Latency** | 1,707 ms | 1,409 ms |
 
 ---
 
-## ⚙️ Configuration Reference (`.env`)
+## ⚙️ Environment Configuration (`.env`)
 
-| Variable | Default | Description |
+| Variable | Default | Purpose |
 |---|---|---|
-| `PORT` | `3000` | Port for Express API and Vite frontend server |
-| `BASE_URL` | `http://localhost:3000` | Public URL used to generate compare links in notification alerts |
-| `APP_SECRET` | *(Random 32-char key)* | Secret key for session cookies and AES-256-GCM destination encryption |
-| `DATABASE_PATH` | `./data/changewatch.db` | Path to persistent SQLite database file |
-| `DATA_DIR` | `./data` | Directory storing screenshots and visual diff artifacts |
-| `PBKDF2_ITERATIONS` | `600000` | Iterations for PBKDF2 password hashing (overridden to 1000 in tests) |
+| `PORT` | `3000` | Application HTTP server port |
+| `BASE_URL` | `http://localhost:3000` | Fully-qualified public app URL |
+| `APP_SECRET` | *(required)* | 32+ character random secret used for session hashing & AES-256 encryption |
+| `DATABASE_PATH` | `./data/changewatch.db` | Filepath for the SQLite database |
+| `CONTACT_EMAIL` | `student@vit.ac.in` | Included in the HTTP `User-Agent` header for web politeness |
+| `PBKDF2_ITERATIONS` | `1000` (dev) / `600000` (prod)| Password hashing work factor |
+| `TICK_MS` | `30000` | Scheduler polling interval (30 seconds) |
 | `WORKER_CONCURRENCY`| `3` | Maximum number of concurrent browser navigation workers |
 | `DOMAIN_GAP_MS` | `10000` | Mandatory quiet period between navigations to the same domain (10s) |
 | `CONFIRM_DELAY_MS` | `120000` | Delay before fast candidate confirmation re-check (2 min) |
@@ -266,6 +326,7 @@ All phases are backed by automated verification logs and screenshots under [`doc
 
 ---
 
-## 📜 License & Acknowledgments
+## 📜 License & Author
 
-Built for the **VinnovateIT Website Change Detector** project. Licensed under the MIT License.
+- **Author:** [vaibhavmittal29](https://github.com/vaibhavmittal29) (Vaibhav Mittal — `vaibhavmittalwork@gmail.com`)
+- **License:** [MIT License](./LICENSE)

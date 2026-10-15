@@ -3,15 +3,25 @@ node_modules/
 .pnp
 .pnp.js
 
-# Environment variables
+# Environment variables & secrets
 .env
 .env.local
 .env.*.local
+*.pem
+*.key
+*.cert
+*.secret
 
 # Databases & local storage
 data/
 *.sqlite
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
 *.db
+*.db-journal
+*.db-wal
+*.db-shm
 
 # Build outputs
 dist/
@@ -27,6 +37,15 @@ yarn-debug.log*
 yarn-error.log*
 .eslintcache
 
+# IDE & Editor folders
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-workspace
+*.sublime-project
+
 # OS Files
 .DS_Store
 Thumbs.db
+Desktop.ini

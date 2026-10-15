@@ -2,7 +2,12 @@
   "name": "changewatch",
   "version": "1.0.0",
   "description": "Website Change Detector — headless browser monitoring with intelligent noise suppression and multi-channel alerting",
-  "private": true,
+  "author": "Vaibhav Mittal <vaibhavmittalwork@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vaibhavmittal29/changewatch.git"
+  },
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server/index.ts",
