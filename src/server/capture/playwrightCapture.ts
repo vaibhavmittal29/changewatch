@@ -132,7 +132,7 @@ export async function capturePage(
           if (!safe) return await route.abort('blockedbyclient');
         }
 
-        if (req.isNavigationRequest() && resType === 'document') {
+        if (req.isNavigationRequest() && resType === 'document' && req.frame() === page.mainFrame()) {
           topLevelNavigations++;
         } else {
           subresourceCount++;

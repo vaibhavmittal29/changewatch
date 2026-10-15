@@ -209,6 +209,11 @@ Allow: /robots-allowed/
     res.send(`<html><body>   </body></html>`);
   });
 
+  // 17. Page embedding an iframe (Navigation counting test)
+  app.get('/demo/iframe-test', (_req, res) => {
+    res.send(`<!DOCTYPE html><html><body><h1>Page With Iframe</h1><iframe src="/demo/stable" width="400" height="300"></iframe></body></html>`);
+  });
+
   // Control APIs for Test Rig & automated testing
   app.get('/demo/fixtures', (_req, res) => res.json({ fixtures: DEMO_FIXTURES, state: fixtureState }));
 

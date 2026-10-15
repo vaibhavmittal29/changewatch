@@ -116,10 +116,14 @@ async function runBenchmarkForN(
     throw new Error(`Expected ${N} baseline versions created, found ${baselineCount.c}`);
   }
 
-  const topLevelNavigations = obsRows[0].top_level_navigations || 1;
-  if (topLevelNavigations !== 1) {
-    throw new Error(`Expected exactly 1 top-level navigation, found ${topLevelNavigations}`);
+  const rawNavs = obsRows[0].top_level_navigations;
+  if (typeof rawNavs !== 'number' || isNaN(rawNavs) || rawNavs < 1) {
+    throw new Error(`Invalid or missing top_level_navigations in observation record: ${rawNavs}`);
   }
+  if (rawNavs !== 1) {
+    throw new Error(`Expected exactly 1 top-level navigation, found ${rawNavs}`);
+  }
+  const topLevelNavigations = rawNavs;
   const subresourceRequests = obsRows[0].subresource_count;
   const dedupRatio = `${N}:1`;
   const bandwidthSavedPct = `${(((N - 1) / N) * 100).toFixed(1)}%`;
