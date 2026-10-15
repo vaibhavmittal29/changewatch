@@ -1,0 +1,24 @@
+======================================================================
+ChangeWatch End-to-End Smoke Test Suite (Acceptance Matrix AH)
+Started at: 2026-10-15T07:02:27.642Z
+======================================================================
+
+[1/4] Testing Real Change Detection on /demo/headline...
+  ✓ Initial check established Version 1 baseline (0 alerts sent)
+  ✓ Candidate change observed on check 1 (pending candidate recorded, 0 alerts sent)
+  ✓ Version 2 confirmed on consecutive check with exactly 1 CHANGE alert in outbox
+
+[2/4] Testing Noise Normalization Suppression (/demo/clock, /demo/counter, /demo/token)...
+  ✓ Clock, Counter, and Token fixtures: 4 checks each created exactly 1 baseline version and 0 alerts
+
+[3/4] Testing Outage & CAPTCHA Isolation (/demo/503 and /demo/captcha)...
+  ✓ 503 Service Unavailable and Fake CAPTCHA leave baseline and versions completely untouched
+
+[4/4] Testing Outage Alert & Recovery Flow (Threshold = 3)...
+  ✓ 3 consecutive failures triggered DOWN event (consecutive_failures=3)
+  ✓ Subsequent OK check triggered RECOVERED event and reset failure counters to 0
+
+======================================================================
+ALL 4 SMOKE TEST SUITE CRITERIA PASSED SUCCESSFULLY!
+Finished at: 2026-10-15T07:02:49.697Z
+======================================================================

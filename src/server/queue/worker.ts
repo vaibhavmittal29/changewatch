@@ -53,6 +53,16 @@ export class WorkerPool {
     this.isRunning = false;
   }
 
+  public async waitForIdle(timeoutMs = 30000): Promise<void> {
+    const start = Date.now();
+    while (this.activeJobsCount > 0) {
+      if (Date.now() - start > timeoutMs) {
+        throw new Error('WorkerPool waitForIdle timed out');
+      }
+      await new Promise(r => setTimeout(r, 50));
+    }
+  }
+
   private scheduleNextPoll(): void {
     if (!this.isRunning) return;
     this.loopTimer = setTimeout(async () => {
