@@ -1,0 +1,32 @@
+﻿
+> changewatch@1.0.0 smoke
+> tsx scripts/smoke.ts
+
+======================================================================
+ChangeWatch End-to-End Smoke Test Suite (Matrix AH)
+Started at: 2026-10-16T11:41:55.702Z
+======================================================================
+
+[DemoServer] 16 Fixtures listening on http://127.0.0.1:4000
+[1/5] Testing Real Change Detection on /demo/headline...
+  Γ£ô Version 2 confirmed on consecutive check with exactly 1 CHANGE alert in outbox
+
+[2/5] Testing Noise Normalization Suppression (/demo/clock, /demo/counter, /demo/token)...
+  Γ£ô Clock, Counter, and Token fixtures: 4 checks each created exactly 1 baseline version and 0 alerts
+
+[3/5] Testing Outage & CAPTCHA Isolation (/demo/503 and /demo/captcha)...
+  Γ£ô 503 and CAPTCHA leave baseline and versions completely untouched
+
+[4/5] Testing Failure Reset on OK & Consecutive Outage Flow...
+  Γ£ô 2 failures followed by 1 OK check cleanly resets consecutive_failures to 0 (no false DOWN alert)
+  Γ£ô 3 consecutive failures successfully triggered DOWN alert
+  Γ£ô Subsequent OK check triggered RECOVERED event and reset counters to 0
+
+[5/5] Testing Browser SSRF & Private Redirect Defense...
+  Γ£ô Browser route interception deterministically blocked redirect to private IP (HTTP 403 SSRF_BLOCKED)
+
+======================================================================
+ALL 5 SMOKE TEST SUITE CRITERIA PASSED SUCCESSFULLY!
+Finished at: 2026-10-16T11:42:20.300Z
+======================================================================
+[Cleanup] Demo server stopped.

@@ -1,0 +1,73 @@
+﻿
+> changewatch@1.0.0 test
+> vitest run
+
+
+[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90mC:/Programming/Projects of antigravity/project_6_webdev_vinnovateit_websitechangedetector3[39m
+
+ [32mΓ£ô[39m tests/integration/schedulerDaily.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 93[2mms[22m[39m
+ [32mΓ£ô[39m tests/unit/robots.test.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 695[2mms[22m[39m
+[90mstdout[2m | tests/unit/navigationCounting.test.ts[2m > [22m[2mPhase 1: Benchmark & Navigation Counting Rigor
+[22m[39m[DemoServer] 16 Fixtures listening on http://127.0.0.1:4000
+
+ [32mΓ£ô[39m tests/integration/queue.test.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 897[2mms[22m[39m
+[90mstdout[2m | tests/integration/ssrfDeterministic.test.ts[2m > [22m[2mPhase 2: SSRF Conclusive & Deterministic Verification
+[22m[39m[DemoServer] 16 Fixtures listening on http://127.0.0.1:4000
+
+[90mstdout[2m | tests/integration/capture.test.ts[2m > [22m[2mSecure Capture, Classifier, and Demo Server (Criteria B, C, H, Y)
+[22m[39m[DemoServer] 16 Fixtures listening on http://127.0.0.1:4000
+
+[90mstdout[2m | tests/integration/volatility.test.ts[2m > [22m[2mPhase D: Volatility Probe (Acceptance Matrix O)
+[22m[39m[DemoServer] 16 Fixtures listening on http://127.0.0.1:4000
+
+ [32mΓ£ô[39m tests/unit/imageDiff.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 53[2mms[22m[39m
+ [32mΓ£ô[39m tests/integration/changeDetector.test.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 899[2mms[22m[39m
+ [32mΓ£ô[39m tests/integration/scheduler.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 597[2mms[22m[39m
+[90mstdout[2m | tests/integration/stretchFeatures.test.ts[2m > [22m[2mSTRETCH Features: http_dom, Gemini, Numeric History, RSS
+[22m[39m[DemoServer] 16 Fixtures listening on http://127.0.0.1:4000
+
+ [32mΓ£ô[39m tests/integration/confirmation.test.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 1195[2mms[22m[39m
+   [33m[2mΓ£ô[22m[39m Phase 5 Integration: Confirmation, Cooldown, Noisy Flag & Outages (Acceptance Matrix J, P, Q)[2m > [22msuppresses alert within COOLDOWN_HOURS and flags noisy pages >70% candidates (Acceptance Matrix Q) [33m 463[2mms[22m[39m
+ [32mΓ£ô[39m tests/integration/stretchFeatures.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 146[2mms[22m[39m
+ [32mΓ£ô[39m tests/unit/schedulerClock.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 35[2mms[22m[39m
+ [32mΓ£ô[39m tests/integration/diffApi.test.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 416[2mms[22m[39m
+ [32mΓ£ô[39m tests/integration/lifecycle.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 420[2mms[22m[39m
+ [32mΓ£ô[39m tests/integration/auth.test.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 422[2mms[22m[39m
+ [32mΓ£ô[39m tests/integration/notifications.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 170[2mms[22m[39m
+ [32mΓ£ô[39m tests/unit/textDiff.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32mΓ£ô[39m tests/unit/captureConfig.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32mΓ£ô[39m tests/integration/keywordAlerts.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 158[2mms[22m[39m
+ [32mΓ£ô[39m tests/unit/validateUrl.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32mΓ£ô[39m tests/unit/securityConfig.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32mΓ£ô[39m tests/unit/classifier.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32mΓ£ô[39m tests/unit/normalize.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32mΓ£ô[39m tests/unit/diffSummary.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32mΓ£ô[39m tests/unit/noiseFilters.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32mΓ£ô[39m tests/unit/politeness.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32mΓ£ô[39m tests/unit/notificationCrypto.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32mΓ£ô[39m tests/unit/geminiSummary.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32mΓ£ô[39m tests/unit/numericExtraction.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32mΓ£ô[39m tests/unit/captureEngineCombos.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32mΓ£ô[39m tests/integration/rssPrivacy.test.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 506[2mms[22m[39m
+ [32mΓ£ô[39m tests/integration/ssrfDeterministic.test.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 2708[2mms[22m[39m
+   [33m[2mΓ£ô[22m[39m Phase 2: SSRF Conclusive & Deterministic Verification[2m > [22mDeterministic SSRF Blocking (Non-Timeout)[2m > [22mproves browser route interception explicitly aborts redirect to private metadata target [33m 1859[2mms[22m[39m
+ [32mΓ£ô[39m tests/unit/navigationCounting.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 2737[2mms[22m[39m
+   [33m[2mΓ£ô[22m[39m Phase 1: Benchmark & Navigation Counting Rigor[2m > [22mproves iframe document requests are NOT counted as top-level navigations [33m 1902[2mms[22m[39m
+ [32mΓ£ô[39m tests/integration/volatility.test.ts [2m([22m[2m1 test[22m[2m)[22m[33m 3633[2mms[22m[39m
+   [33m[2mΓ£ô[22m[39m Phase D: Volatility Probe (Acceptance Matrix O)[2m > [22mprobes volatile counter fixture, identifies unstable lines, and generates ignore patterns [33m 3087[2mms[22m[39m
+ [32mΓ£ô[39m tests/integration/capture.test.ts [2m([22m[2m8 tests[22m[2m)[22m[33m 6907[2mms[22m[39m
+   [33m[2mΓ£ô[22m[39m Secure Capture, Classifier, and Demo Server (Criteria B, C, H, Y)[2m > [22mH: Stable page captures sanitized DOM, text, screenshot, and classifies as OK [33m 1797[2mms[22m[39m
+   [33m[2mΓ£ô[22m[39m Secure Capture, Classifier, and Demo Server (Criteria B, C, H, Y)[2m > [22mH: 503 Service Unavailable fixture classifies as ERROR (http_503) [33m 1128[2mms[22m[39m
+   [33m[2mΓ£ô[22m[39m Secure Capture, Classifier, and Demo Server (Criteria B, C, H, Y)[2m > [22mH: Fake CAPTCHA fixture classifies as BLOCKED (captcha_challenge) [33m 1119[2mms[22m[39m
+   [33m[2mΓ£ô[22m[39m Secure Capture, Classifier, and Demo Server (Criteria B, C, H, Y)[2m > [22mH: 429 Rate-Limited fixture classifies as BLOCKED (rate_limited_429) [33m 1140[2mms[22m[39m
+   [33m[2mΓ£ô[22m[39m Secure Capture, Classifier, and Demo Server (Criteria B, C, H, Y)[2m > [22mH: Empty content fixture classifies as ERROR (empty_content) [33m 1133[2mms[22m[39m
+ [32mΓ£ô[39m tests/integration/picker.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 7456[2mms[22m[39m
+   [33m[2mΓ£ô[22m[39m Phase 9: Visual Selector Picker API & Change Isolation[2m > [22mrenders target page and returns screenshot, dimensions, and element boxes [33m 1238[2mms[22m[39m
+   [33m[2mΓ£ô[22m[39m Phase 9: Visual Selector Picker API & Change Isolation[2m > [22mtests selectors and extracts text with include and ignore filters [33m 1046[2mms[22m[39m
+   [33m[2mΓ£ô[22m[39m Phase 9: Visual Selector Picker API & Change Isolation[2m > [22mhonors Watch and Ignore selectors across checks (ignores banner, alerts on headline) [33m 4541[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m33 passed[39m[22m[90m (33)[39m
+[2m      Tests [22m [1m[32m161 passed[39m[22m[90m (161)[39m
+[2m   Start at [22m 17:10:58
+[2m   Duration [22m 9.76s[2m (transform 2.11s, setup 0ms, collect 20.88s, tests 30.24s, environment 6ms, prepare 6.87s)[22m
+
