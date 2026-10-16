@@ -104,13 +104,22 @@ export class NotificationWorker {
 
     // Look up destination config
     const dest = this.db.prepare(`
-      SELECT destination_config, enabled FROM notification_destinations WHERE id = ?
-    `).get(row.destination_id) as { destination_config: string; enabled: number } | undefined;
+      SELECT user_id, destination_config, enabled FROM notification_destinations WHERE id = ?
+    `).get(row.destination_id) as { user_id: string; destination_config: string; enabled: number } | undefined;
 
-    if (!dest || !dest.enabled) {
+    if (!dest || dest.user_id !== row.user_id) {
       this.db.prepare(`
         UPDATE notification_outbox
-        SET status = 'PENDING_CONFIG', attempts = ?, last_error = 'Destination not configured or disabled'
+        SET status = 'FAILED', attempts = ?, last_error = 'Destination owner mismatch or destination deleted'
+        WHERE id = ?
+      `).run(newAttempts, row.id);
+      return;
+    }
+
+    if (!dest.enabled) {
+      this.db.prepare(`
+        UPDATE notification_outbox
+        SET status = 'PENDING_CONFIG', attempts = ?, last_error = 'Destination disabled'
         WHERE id = ?
       `).run(newAttempts, row.id);
       return;

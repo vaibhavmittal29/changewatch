@@ -5,8 +5,10 @@ import {
   TelegramConfigSchema,
   EmailConfigSchema,
   escapeHtml,
+  escapeDiscordMarkdown,
   sanitizeUrl,
   readLimitedBody,
+  validateSmtpHostDns,
 } from './configValidation.js';
 
 export interface NotificationPayload {
@@ -54,9 +56,12 @@ export async function dispatchDiscord(config: DiscordConfig, payload: Notificati
   const validUrl = sanitizeUrl(payload.compareUrl);
   const colors = { CHANGE: 0x6366f1, DOWN: 0xef4444, RECOVERED: 0x10b981, TEST: 0x3b82f6 };
 
+  const safeTitle = escapeDiscordMarkdown(`[${payload.eventType}] ${payload.monitorName}`);
+  const safeDesc = escapeDiscordMarkdown(payload.summary);
+
   const embed = {
-    title: `[${payload.eventType}] ${payload.monitorName}`,
-    description: payload.summary,
+    title: safeTitle,
+    description: safeDesc,
     url: validUrl,
     color: colors[payload.eventType] || 0x6366f1,
     timestamp: payload.timestamp,
@@ -113,9 +118,10 @@ export async function dispatchTelegram(config: TelegramConfig, payload: Notifica
   const safeName = escapeHtml(payload.monitorName);
   const safeSummary = escapeHtml(payload.summary);
   const validUrl = sanitizeUrl(payload.compareUrl);
+  const safeUrlAttr = validUrl ? validUrl.replace(/"/g, '&quot;') : '';
 
   const text = `<b>[${payload.eventType}] ${safeName}</b>\n\n${safeSummary}${
-    validUrl ? `\n\n<a href="${validUrl}">View Comparison</a>` : ''
+    validUrl ? `\n\n<a href="${safeUrlAttr}">View Comparison</a>` : ''
   }`;
 
   const apiUrl = `https://api.telegram.org/bot${parsed.data.botToken}/sendMessage`;
@@ -166,7 +172,7 @@ export async function dispatchEmail(config: EmailConfig, payload: NotificationPa
     return { success: false, status: 'PENDING_CONFIG', error: parsed.error.issues[0]?.message || 'Invalid Email config' };
   }
 
-  const host = parsed.data.smtpHost || env.SMTP_HOST;
+  const host = env.SMTP_HOST || parsed.data.smtpHost;
   const port = parsed.data.smtpPort || (env.SMTP_PORT ? Number(env.SMTP_PORT) : undefined);
   const user = parsed.data.smtpUser || env.SMTP_USER;
   const pass = parsed.data.smtpPass || env.SMTP_PASS;
@@ -175,6 +181,11 @@ export async function dispatchEmail(config: EmailConfig, payload: NotificationPa
 
   if (!host || !to) {
     return { success: false, status: 'PENDING_CONFIG', error: 'SMTP host or recipient email not configured' };
+  }
+
+  const isDnsSafe = await validateSmtpHostDns(host);
+  if (!isDnsSafe) {
+    return { success: false, status: 'FAILED', error: `Untrusted or non-public SMTP host rejected: ${host}` };
   }
 
   const transporter = nodemailer.createTransport({
@@ -191,6 +202,7 @@ export async function dispatchEmail(config: EmailConfig, payload: NotificationPa
   const safeType = escapeHtml(payload.eventType);
   const safeSummary = escapeHtml(payload.summary);
   const validUrl = sanitizeUrl(payload.compareUrl);
+  const safeUrlAttr = validUrl ? validUrl.replace(/"/g, '&quot;') : '';
 
   const subject = `[${payload.eventType}] ${payload.monitorName} - ChangeWatch`;
   const html = `
@@ -199,7 +211,7 @@ export async function dispatchEmail(config: EmailConfig, payload: NotificationPa
       <p><strong>Monitor:</strong> ${safeName}</p>
       <p><strong>Event:</strong> ${safeType}</p>
       <p><strong>Summary:</strong> ${safeSummary}</p>
-      ${validUrl ? `<p><a href="${validUrl}" style="background-color: #4f46e5; color: white; padding: 10px 16px; text-decoration: none; border-radius: 6px; display: inline-block;">View Comparison</a></p>` : ''}
+      ${validUrl ? `<p><a href="${safeUrlAttr}" style="background-color: #4f46e5; color: white; padding: 10px 16px; text-decoration: none; border-radius: 6px; display: inline-block;">View Comparison</a></p>` : ''}
       <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
       <small style="color: #64748b;">ChangeWatch Automated Monitoring &bull; ${escapeHtml(payload.timestamp)}</small>
     </div>

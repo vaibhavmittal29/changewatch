@@ -22,6 +22,11 @@ interface CacheEntry {
 }
 const renderCache = new Map<string, CacheEntry>();
 
+const MAX_CACHE_ENTRIES = 50;
+const MAX_DOM_LENGTH = 1024 * 1024; // 1MB DOM cap
+let activePickerRenders = 0;
+const MAX_CONCURRENT_RENDERS = 3;
+
 export function getCachedDom(renderId: string): string | null {
   const entry = renderCache.get(renderId);
   if (!entry) return null;
@@ -29,16 +34,23 @@ export function getCachedDom(renderId: string): string | null {
     renderCache.delete(renderId);
     return null;
   }
+  // Move to end for LRU refresh
+  renderCache.delete(renderId);
+  renderCache.set(renderId, entry);
   return entry.sanitizedDom;
 }
 
 export function cacheDom(renderId: string, sanitizedDom: string): void {
-  // Prune expired
+  const cappedDom = sanitizedDom.length > MAX_DOM_LENGTH ? sanitizedDom.slice(0, MAX_DOM_LENGTH) : sanitizedDom;
   const now = Date.now();
   for (const [id, entry] of renderCache.entries()) {
     if (now > entry.expiresAt) renderCache.delete(id);
   }
-  renderCache.set(renderId, { sanitizedDom, expiresAt: now + 15 * 60 * 1000 });
+  if (renderCache.size >= MAX_CACHE_ENTRIES) {
+    const oldest = renderCache.keys().next().value;
+    if (oldest) renderCache.delete(oldest);
+  }
+  renderCache.set(renderId, { sanitizedDom: cappedDom, expiresAt: now + 15 * 60 * 1000 });
 }
 
 const TRACKER_DOMAINS = [
@@ -54,10 +66,15 @@ export async function renderPicker(
   targetUrl: string,
   userConfig: Partial<CaptureConfig> = {}
 ): Promise<PickerRenderResult> {
-  const config = { ...DEFAULT_CAPTURE_CONFIG, ...userConfig };
-  await validateUrl(targetUrl);
+  if (activePickerRenders >= MAX_CONCURRENT_RENDERS) {
+    throw new Error('Too many concurrent picker renders in progress. Please retry in a moment.');
+  }
+  activePickerRenders++;
+  try {
+    const config = { ...DEFAULT_CAPTURE_CONFIG, ...userConfig };
+    await validateUrl(targetUrl);
 
-  const browser = await getBrowser();
+    const browser = await getBrowser();
   const context = await browser.newContext({
     viewport: config.viewport,
     deviceScaleFactor: config.deviceScaleFactor,
@@ -166,8 +183,11 @@ export async function renderPicker(
       elements,
       sanitizedDom,
     };
+    } finally {
+      await page.close().catch(() => {});
+      await context.close().catch(() => {});
+    }
   } finally {
-    await page.close().catch(() => {});
-    await context.close().catch(() => {});
+    activePickerRenders--;
   }
 }

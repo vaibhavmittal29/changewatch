@@ -1,8 +1,32 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import { getDb } from '../db/index.js';
 import { enqueueCheckJob } from '../queue/jobs.js';
 import { CaptureConfigSchema } from '../capture/captureConfig.js';
 import { probeTargetVolatility } from '../engine/volatility.js';
+
+const ApprovePatternsSchema = z.object({
+  patterns: z.array(
+    z.string()
+      .min(1, 'Pattern cannot be empty')
+      .max(200, 'Pattern exceeds max length 200')
+      .refine(val => {
+        if (/(\+|\*|\{[0-9,]+\})\s*(\+|\*|\{[0-9,]+\})/.test(val) || /\([^)]*(\+|\*)[^)]*\)\s*(\+|\*)/.test(val)) {
+          return false;
+        }
+        try {
+          if (val.startsWith('/') && val.endsWith('/')) {
+            new RegExp(val.slice(1, -1));
+          } else {
+            new RegExp(val);
+          }
+          return true;
+        } catch {
+          return false;
+        }
+      }, 'Pattern is not a valid or safe regular expression')
+  ).max(50, 'Too many patterns (max 50)'),
+}).strict();
 
 export const subscriptionActionsRouter = Router();
 
@@ -161,10 +185,16 @@ subscriptionActionsRouter.post('/subscriptions/:id/probe', async (req, res) => {
 
 // POST /api/subscriptions/:id/approve-patterns
 subscriptionActionsRouter.post('/subscriptions/:id/approve-patterns', (req, res) => {
+  const parsed = ApprovePatternsSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'Validation failed', details: parsed.error.issues });
+    return;
+  }
+
   const { id } = req.params;
   const userId = req.user!.id;
   const db = getDb();
-  const patterns = Array.isArray(req.body?.patterns) ? req.body.patterns : [];
+  const patterns = parsed.data.patterns;
 
   const sub = db.prepare(`
     SELECT id, learned_ignore_patterns

@@ -18,8 +18,28 @@ const TestSelectorsSchema = z.object({
   ignore_selectors: z.array(z.string()).default([]),
 });
 
+const userRenderCounts = new Map<string, { count: number; resetAt: number }>();
+
+function checkUserPickerRateLimit(userId: string): boolean {
+  const now = Date.now();
+  const entry = userRenderCounts.get(userId);
+  if (!entry || now > entry.resetAt) {
+    userRenderCounts.set(userId, { count: 1, resetAt: now + 60_000 });
+    return true;
+  }
+  if (entry.count >= 10) return false;
+  entry.count++;
+  return true;
+}
+
 // POST /api/picker/render
 pickerRouter.post('/render', async (req, res) => {
+  const userId = req.user?.id || 'anonymous';
+  if (!checkUserPickerRateLimit(userId)) {
+    res.status(429).json({ error: 'Too many visual picker renders. Rate limit is 10 renders per minute.' });
+    return;
+  }
+
   const parsed = RenderSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: 'Validation failed', details: parsed.error.format() });

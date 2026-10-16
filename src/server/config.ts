@@ -69,7 +69,7 @@ export const EnvSchema = z.object({
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['APP_SECRET'],
-        message: 'Production requires a high-entropy APP_SECRET of at least 32 characters; default keys are rejected.',
+        message: 'Production requires a cryptographically random APP_SECRET (minimum 32 characters, e.g. 32+ bytes hex); default and low-complexity keys are rejected.',
       });
     }
     if (data.PBKDF2_ITERATIONS < 600000) {

@@ -13,7 +13,7 @@ describe('Security Configuration & Secret Management (Criterion A)', () => {
     expect(res.success).toBe(false);
     if (!res.success) {
       const msgs = res.error.issues.map(i => i.message);
-      expect(msgs.some(m => m.includes('Production requires a high-entropy APP_SECRET'))).toBe(true);
+      expect(msgs.some(m => m.includes('Production requires a cryptographically random APP_SECRET'))).toBe(true);
     }
   });
 

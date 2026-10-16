@@ -12,7 +12,10 @@ let sharedBrowser: Browser | null = null;
 export async function getBrowser(): Promise<Browser> {
   if (!sharedBrowser || !sharedBrowser.isConnected()) {
     const args = ['--disable-dev-shm-usage'];
-    if (process.env.CHROMIUM_SANDBOX !== 'true') args.push('--no-sandbox');
+    const isProduction = env.NODE_ENV === 'production';
+    if (!isProduction || process.env.ALLOW_NO_SANDBOX === 'true') {
+      args.push('--no-sandbox');
+    }
     sharedBrowser = await chromium.launch({ headless: true, args });
   }
   return sharedBrowser;
@@ -79,7 +82,7 @@ export async function capturePage(targetUrl: string, config: CaptureConfig, obse
         if (['media', 'font'].includes(resType)) return await route.abort('blockedbyclient');
 
         const host = parsed.hostname.toLowerCase();
-        if (TRACKER_DOMAINS.some(d => host.endsWith(d))) return await route.abort('blockedbyclient');
+        if (TRACKER_DOMAINS.some(d => host === d || host.endsWith('.' + d))) return await route.abort('blockedbyclient');
 
         const validation = await validateRouteUrl(req.url());
         if (!validation.allowed) return await route.abort('blockedbyclient');
