@@ -162,7 +162,7 @@ ChangeWatch decouples the concept of a **Target** (canonical URL and origin) fro
 **Multi-layered defense suppresses false positives.**  
 - **Tier 1 — CSS Selector Scoping**: The Visual Picker allows users to select exact target containers while ignoring dynamic widgets (e.g. banner ads, sidebars).
 - **Tier 2 — Deterministic Normalization**: Regex-based normalizers strip dynamic timestamps, auto-incrementing view counters, and random hex/UUID session tokens.
-- **Tier 3 — Sensitivity Threshold**: Diff line changes must cross user-defined thresholds (`low`: 1 line, `balanced`: 3 lines, `high`: 5 lines).
+- **Tier 3 — Sensitivity Threshold**: Diff line changes must cross user-defined thresholds (Myers diff line drift: `high`: any line added or removed, `balanced`: $\ge 5\%$ lines changed, `low`: $\ge 20\%$ lines changed).
 - **Tier 4 — Two-Check Confirmation**: Unstable candidate changes must be observed across two consecutive checks before triggering an alert (`CONFIRM_DELAY_MS`).
 - **Tier 5 — Alert Cooldown & Noisy Page Flagging**: Immediate alerts are throttled to once per 6 hours (suppressed events go to daily digests), and monitors triggering in >70% of checks are flagged `is_noisy`.
 
@@ -225,7 +225,7 @@ Default demo credentials (created by `npm run seed`):
 ChangeWatch includes a comprehensive automated test and verification suite:
 
 ```bash
-# Run all 21 unit and integration test suites (101 automated tests)
+# Run all 33 unit and integration test suites (161 automated tests)
 npm test
 
 # Run strict TypeScript typecheck
