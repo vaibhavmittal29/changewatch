@@ -11,7 +11,7 @@
 
 ChangeWatch has undergone a rigorous, evidence-backed implementation, refactoring, and security hardening cycle across all 13 planned phases. Every requirement from `docs/implementation_plan.md` across **MUST**, **STRONG**, and **STRETCH** tiers is implemented, tested, verified, and documented.
 
-The test suite now encompasses **33 test files and 161 automated unit and integration tests** passing with 100% reliability, zero TypeScript typecheck errors, zero ESLint warnings, a clean Vite production client build, full 5/5 criteria passed on the end-to-end live smoke test, and verified 20:1 and 200:1 consolidation ratios on the scalability benchmark.
+The test suite now encompasses **38 test files and 195 automated unit and integration tests** passing with 100% reliability, zero TypeScript typecheck errors, zero ESLint warnings, a clean Vite production client build, full 5/5 criteria passed on the end-to-end live smoke test, and verified 20:1 and 200:1 consolidation ratios on the scalability benchmark.
 
 ---
 
@@ -34,13 +34,15 @@ The test suite now encompasses **33 test files and 161 automated unit and integr
   - `src/server/routes/subscriptions.ts`: 244 lines
   - `src/client/pages/MonitorDetail.tsx`: 244 lines
   - `src/client/components/AddMonitorModal.tsx`: 246 lines
-  - `src/server/engine/changeDetector.ts`: 247 lines
-  - `src/server/queue/worker.ts`: 232 lines
-  - `src/server/queue/scheduler.ts`: 168 lines
-  - `src/server/queue/workerHandlers.ts`: 161 lines
+  - `src/server/engine/changeDetector.ts`: 241 lines
+  - `src/server/queue/worker.ts`: 238 lines
+  - `src/server/queue/scheduler.ts`: 189 lines
+  - `src/server/queue/workerHandlers.ts`: 215 lines
   - `src/server/engine/keywordRules.ts`: 107 lines
   - `src/server/engine/geminiSummary.ts`: 83 lines
-  - `src/client/components/NumericTrendChart.tsx`: 170 lines
+  - `src/client/components/NumericTrendChart.tsx`: 181 lines
+  - `src/server/routes/diff.ts`: 212 lines
+  - `scripts/verify.ts`: 56 lines
 
 ---
 
@@ -53,10 +55,10 @@ The test suite now encompasses **33 test files and 161 automated unit and integr
 
 ## 4. Test Coverage & Pass Rate
 - **Automated Test Suite**: Vitest v3.2.7 execution:
-  - **Test Files**: **33 passed (33)**
-  - **Tests**: **161 passed (161)**
+  - **Test Files**: **38 passed (38)**
+  - **Tests**: **195 passed (195)**
   - **Pass Rate**: **100% (0 failures, 0 skipped)**
-  - **Execution Duration**: ~9.8s
+  - **Execution Duration**: ~10s
 - **Evidence Logs**: Captured live in [`docs/evidence/final/test_results.txt`](file:///c:/Programming/Projects%20of%20antigravity/project_6_webdev_vinnovateit_websitechangedetector3/docs/evidence/final/test_results.txt).
 - **Smoke Suite**: 5/5 criteria passed on 16 live demo server fixtures in [`docs/evidence/final/smoke.txt`](file:///c:/Programming/Projects%20of%20antigravity/project_6_webdev_vinnovateit_websitechangedetector3/docs/evidence/final/smoke.txt).
 

@@ -19,7 +19,8 @@
     "seed": "tsx scripts/seed.ts",
     "capture": "tsx scripts/capture.ts",
     "smoke": "tsx scripts/smoke.ts",
-    "benchmark": "tsx scripts/benchmark.ts"
+    "benchmark": "tsx scripts/benchmark.ts",
+    "verify": "tsx scripts/verify.ts"
   },
   "dependencies": {
     "better-sqlite3": "13.0.3",

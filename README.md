@@ -220,12 +220,34 @@ Default demo credentials (created by `npm run seed`):
 
 ---
 
+## 🚀 Quickstart & Deployment
+
+- **Deployed Live URL:** `DEPLOYED_URL_HERE` *(configure in production with reverse proxy HTTPS)*
+- **Local Dev Server:** `http://localhost:3000`
+- **Demo Fixture Server:** `http://localhost:4000` (enabled via `ALLOW_LOCAL_DEMO=true`)
+
+```bash
+# 1. Install dependencies
+npm ci
+
+# 2. Run the all-in-one verification pipeline (typecheck, lint, 195 tests, build)
+npm run verify
+
+# 3. Start local development server (Express API + Vite React client)
+npm run dev
+```
+
+---
+
 ## 🧪 Verification & Test Suites
 
 ChangeWatch includes a comprehensive automated test and verification suite:
 
 ```bash
-# Run all 33 unit and integration test suites (161 automated tests)
+# Run the complete end-to-end verification battery (typecheck, lint, test, build)
+npm run verify
+
+# Run all 38 unit and integration test suites (195 automated tests)
 npm test
 
 # Run strict TypeScript typecheck
@@ -234,14 +256,14 @@ npm run typecheck
 # Run ESLint zero-warning audit
 npm run lint
 
+# Production build (TypeScript bundling + Vite client build)
+npm run build
+
 # Run end-to-end smoke test on the 16 demo server fixtures
 npm run smoke
 
 # Run 200-subscription shared-fetch scalability benchmark
 npm run benchmark
-
-# Run Playwright UI walkthrough
-npx tsx scripts/verify-phase8-ui.ts
 ```
 
 ---
