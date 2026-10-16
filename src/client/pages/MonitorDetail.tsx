@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { NumericTrendChart } from '../components/NumericTrendChart.js';
 
 interface VersionItem { id: string; version_number: number; content_hash: string; change_summary: string | null; created_at: string; observation_id: string; screenshot_path: string | null; }
 interface EventItem { id: string; event_type: 'CHANGE' | 'DOWN' | 'RECOVERED'; summary: string; suppressed: number; created_at: string; previous_version_id: string | null; current_version_id: string | null; }
@@ -138,6 +139,8 @@ export const MonitorDetail: React.FC<MonitorDetailProps> = ({
           )}
         </div>
       </div>
+
+      <NumericTrendChart subscriptionId={subscriptionId} />
 
       {/* Version Timeline */}
       <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">

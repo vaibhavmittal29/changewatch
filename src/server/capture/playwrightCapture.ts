@@ -175,8 +175,12 @@ export async function capturePage(targetUrl: string, config: CaptureConfig, obse
         const screenshotsDir = path.join(env.DATA_DIR, 'screenshots');
         if (!fs.existsSync(screenshotsDir)) fs.mkdirSync(screenshotsDir, { recursive: true });
         const fullPath = path.join(screenshotsDir, `${obsId}.png`);
-        await page.screenshot({ path: fullPath, fullPage: true });
-        screenshotPath = fullPath;
+        try {
+          await page.screenshot({ path: fullPath, fullPage: true, timeout: 8000 });
+        } catch {
+          await page.screenshot({ path: fullPath, fullPage: false, timeout: 8000 }).catch(() => {});
+        }
+        if (fs.existsSync(fullPath)) screenshotPath = fullPath;
       } catch (ssErr) {
         console.warn(`[capturePage] Screenshot capture failed for ${obsId}:`, ssErr);
       }

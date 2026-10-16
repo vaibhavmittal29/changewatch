@@ -5,9 +5,20 @@ import { requireAuth } from '../auth/middleware.js';
 
 export const stretchRouter = Router();
 
+export function extractNumericValue(text: string): number | null {
+  if (!text) return null;
+  const match = text.match(/([+-]?)\s*[$€£¥₹]?\s*([+-]?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?(?:[eE][+-]?\d+)?)/);
+  if (!match) return null;
+  const isNegative = match[1] === '-' || match[2].startsWith('-');
+  const rawNum = match[2].replace(/^[+-]/, '').replace(/,/g, '');
+  const parsed = parseFloat(rawNum);
+  if (!Number.isFinite(parsed)) return null;
+  return isNegative ? -parsed : parsed;
+}
+
 /**
  * GET /api/subscriptions/:id/numeric-history (STRETCH Item)
- * Extracts numeric metrics (e.g. price, counts) across version history for Chart.js visualization.
+ * Extracts numeric metrics (e.g. price, counts) across version history for Chart.js / Canvas visualization.
  */
 stretchRouter.get('/subscriptions/:id/numeric-history', requireAuth, (req, res) => {
   const { id } = req.params;
@@ -27,16 +38,11 @@ stretchRouter.get('/subscriptions/:id/numeric-history', requireAuth, (req, res) 
     ORDER BY version_number ASC
   `).all(id) as Array<{ version_number: number; stored_text: string; created_at: string }>;
 
-  const points = versions.map(v => {
-    // Extract first currency or floating/integer number in the version text
-    const match = v.stored_text.match(/\$?(\d+(?:\.\d+)?)/);
-    const value = match ? parseFloat(match[1]) : null;
-    return {
-      versionNumber: v.version_number,
-      timestamp: v.created_at,
-      value,
-    };
-  }).filter(p => p.value !== null);
+  const points = versions.map(v => ({
+    versionNumber: v.version_number,
+    timestamp: v.created_at,
+    value: extractNumericValue(v.stored_text),
+  })).filter((p): p is { versionNumber: number; timestamp: string; value: number } => p.value !== null);
 
   res.json({ subscriptionId: id, points });
 });
