@@ -35,6 +35,7 @@ export const EnvSchema = z.object({
   MAX_SUBS_PER_USER: z.coerce.number().int().min(1).default(25),
   OBSERVATION_RETENTION_DAYS: z.coerce.number().int().min(1).default(30),
   DIGEST_HOUR: z.coerce.number().int().min(0).max(23).default(9),
+  TZ: z.string().default('UTC'),
   ALLOW_LOCAL_DEMO: z.string().transform(v => v === 'true' || v === '1').default('false'),
   DEMO_PORT: z.coerce.number().default(4000),
   DEV_MIN_INTERVAL_MINUTES: z.coerce.number().int().min(1).optional(),
