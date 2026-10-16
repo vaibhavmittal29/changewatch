@@ -31,6 +31,7 @@ jobs:
           NODE_OPTIONS: "--max-old-space-size=4096"
           APP_SECRET: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
           COOKIE_SECRET: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+          ALLOW_LOCAL_DEMO: "true"
           ALLOW_NO_SANDBOX: "true"
           CI: "true"
         run: npm run verify

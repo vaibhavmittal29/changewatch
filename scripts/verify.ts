@@ -6,6 +6,10 @@ interface Step {
   args: string[];
 }
 
+process.env.ALLOW_LOCAL_DEMO = 'true';
+process.env.NODE_ENV = process.env.NODE_ENV || 'test';
+process.env.APP_SECRET = process.env.APP_SECRET || '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+
 const steps: Step[] = [
   { name: 'TypeScript Typecheck', command: 'npm', args: ['run', 'typecheck'] },
   { name: 'ESLint Code Quality', command: 'npm', args: ['run', 'lint'] },
