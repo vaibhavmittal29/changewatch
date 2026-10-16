@@ -53,7 +53,7 @@ export function processDailyDigest(
              e.summary, e.created_at, s.name as subscription_name
       FROM change_events e
       JOIN subscriptions s ON e.subscription_id = s.id
-      WHERE s.user_id = ? AND e.suppressed = 1 AND e.created_at >= ?
+      WHERE s.user_id = ? AND e.suppressed = 1 AND (e.suppression_reason IS NULL OR e.suppression_reason = 'cooldown') AND e.created_at >= ?
       ORDER BY e.created_at ASC
     `).all(user.id, cutoffIso) as SuppressedEventRow[];
 

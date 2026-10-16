@@ -7,8 +7,35 @@ export const stretchRouter = Router();
 
 import crypto from 'node:crypto';
 
-export function extractNumericValue(text: string): number | null {
+export function escapeXml(str: string): string {
+  if (!str) return '';
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+export function escapeCdata(str: string): string {
+  if (!str) return '';
+  return str.replace(/]]>/g, ']]]]><![CDATA[>');
+}
+
+export function extractNumericValue(text: string, label?: string): number | null {
   if (!text) return null;
+  if (label && label.trim().length > 0) {
+    const escaped = label.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const labelRegex = new RegExp(`${escaped}\\s*[:=-]?\\s*([+-]?)\\s*[$€£¥₹]?\\s*([+-]?(?:\\d{1,3}(?:,\\d{3})+|\\d+)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?)`, 'i');
+    const labelMatch = text.match(labelRegex);
+    if (labelMatch) {
+      const isNeg = labelMatch[1] === '-' || labelMatch[2].startsWith('-');
+      const raw = labelMatch[2].replace(/^[+-]/, '').replace(/,/g, '');
+      const parsed = parseFloat(raw);
+      if (Number.isFinite(parsed)) return isNeg ? -parsed : parsed;
+    }
+  }
+
   const match = text.match(/([+-]?)\s*[$€£¥₹]?\s*([+-]?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?(?:[eE][+-]?\d+)?)/);
   if (!match) return null;
   const isNegative = match[1] === '-' || match[2].startsWith('-');
@@ -25,6 +52,7 @@ export function extractNumericValue(text: string): number | null {
 stretchRouter.get('/subscriptions/:id/numeric-history', requireAuth, (req, res) => {
   const { id } = req.params;
   const userId = req.user!.id;
+  const label = typeof req.query.label === 'string' ? req.query.label : undefined;
   const db = getDb();
 
   const sub = db.prepare('SELECT id, name FROM subscriptions WHERE id = ? AND user_id = ?').get(id, userId);
@@ -43,7 +71,7 @@ stretchRouter.get('/subscriptions/:id/numeric-history', requireAuth, (req, res) 
   const points = versions.map(v => ({
     versionNumber: v.version_number,
     timestamp: v.created_at,
-    value: extractNumericValue(v.stored_text),
+    value: extractNumericValue(v.stored_text, label),
   })).filter((p): p is { versionNumber: number; timestamp: string; value: number } => p.value !== null);
 
   res.json({ subscriptionId: id, points });
@@ -113,27 +141,25 @@ stretchRouter.get('/subscriptions/:id/rss', (req, res) => {
     LIMIT 25
   `).all(id) as Array<{ id: string; event_type: string; summary: string; created_at: string; previous_version_id: string | null; current_version_id: string | null }>;
 
-  const safeName = sub.name.replace(/[<>&]/g, '');
   const itemsXml = events.map(ev => {
     const pubDate = new Date(ev.created_at).toUTCString();
     const link = `${env.BASE_URL}/compare/${sub.id}?from=${ev.previous_version_id || ''}&to=${ev.current_version_id || ''}`;
-    const safeSummary = ev.summary.replace(/[<>&]/g, '');
     return `
     <item>
-      <title>[${ev.event_type}] ${safeName} - ${safeSummary}</title>
-      <link>${link}</link>
-      <guid isPermaLink="false">${ev.id}</guid>
+      <title>[${escapeXml(ev.event_type)}] ${escapeXml(sub.name)} - ${escapeXml(ev.summary)}</title>
+      <link>${escapeXml(link)}</link>
+      <guid isPermaLink="false">${escapeXml(ev.id)}</guid>
       <pubDate>${pubDate}</pubDate>
-      <description><![CDATA[${ev.summary}]]></description>
+      <description><![CDATA[${escapeCdata(ev.summary)}]]></description>
     </item>`;
   }).join('');
 
   const rssXml = `<?xml version="1.0" encoding="UTF-8" ?>
 <rss version="2.0">
   <channel>
-    <title>ChangeWatch: ${safeName}</title>
-    <link>${env.BASE_URL}/monitor/${sub.id}</link>
-    <description>Live change alert feed for ${safeName}</description>
+    <title>ChangeWatch: ${escapeXml(sub.name)}</title>
+    <link>${escapeXml(env.BASE_URL)}/monitor/${escapeXml(sub.id)}</link>
+    <description>Live change alert feed for ${escapeXml(sub.name)}</description>
     <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
     ${itemsXml}
   </channel>

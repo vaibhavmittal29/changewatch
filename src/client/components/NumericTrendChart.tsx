@@ -8,17 +8,20 @@ interface MetricPoint {
 
 interface NumericTrendChartProps {
   subscriptionId: string;
+  metricLabel?: string;
 }
 
-export const NumericTrendChart: React.FC<NumericTrendChartProps> = ({ subscriptionId }) => {
+export const NumericTrendChart: React.FC<NumericTrendChartProps> = ({ subscriptionId, metricLabel: initialLabel }) => {
   const [points, setPoints] = useState<MetricPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [label, setLabel] = useState<string>(initialLabel || '');
 
   useEffect(() => {
     let isMounted = true;
     setLoading(true);
-    fetch(`/api/subscriptions/${subscriptionId}/numeric-history`)
+    const query = label.trim() ? `?label=${encodeURIComponent(label.trim())}` : '';
+    fetch(`/api/subscriptions/${subscriptionId}/numeric-history${query}`)
       .then(res => {
         if (!res.ok) throw new Error('Failed to load numeric history');
         return res.json();
@@ -36,7 +39,7 @@ export const NumericTrendChart: React.FC<NumericTrendChartProps> = ({ subscripti
         }
       });
     return () => { isMounted = false; };
-  }, [subscriptionId]);
+  }, [subscriptionId, label]);
 
   if (loading) {
     return (
@@ -122,6 +125,13 @@ export const NumericTrendChart: React.FC<NumericTrendChartProps> = ({ subscripti
           <span className="text-xs text-slate-400">Tracked across {points.length} confirmed versions</span>
         </div>
         <div className="flex items-center gap-4">
+          <input
+            type="text"
+            placeholder="Filter label..."
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            className="text-xs bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-300 placeholder-slate-600 focus:outline-none focus:border-emerald-500 w-28"
+          />
           <div>
             <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Current</span>
             <span className="text-sm font-bold text-white">{currentVal.toLocaleString()}</span>

@@ -30,22 +30,27 @@ export function migrate(db: Database.Database): void {
 
     db.transaction(() => {
       db.exec(sql);
-      db.pragma('user_version = 3');
+      db.pragma('user_version = 4');
     })();
     return;
   }
 
-  if (currentVersion < 3) {
+  if (currentVersion < 4) {
     db.transaction(() => {
       if (currentVersion === 1) {
         if (!hasColumn(db, 'observations', 'top_level_navigations')) {
           db.exec('ALTER TABLE observations ADD COLUMN top_level_navigations INTEGER NOT NULL DEFAULT 1;');
         }
       }
-      if (!hasColumn(db, 'subscriptions', 'feed_token')) {
-        db.exec('ALTER TABLE subscriptions ADD COLUMN feed_token TEXT;');
+      if (currentVersion <= 2) {
+        if (!hasColumn(db, 'subscriptions', 'feed_token')) {
+          db.exec('ALTER TABLE subscriptions ADD COLUMN feed_token TEXT;');
+        }
       }
-      db.pragma('user_version = 3');
+      if (!hasColumn(db, 'change_events', 'suppression_reason')) {
+        db.exec('ALTER TABLE change_events ADD COLUMN suppression_reason TEXT;');
+      }
+      db.pragma('user_version = 4');
     })();
   }
 }

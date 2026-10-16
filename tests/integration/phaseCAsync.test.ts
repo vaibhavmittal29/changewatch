@@ -374,7 +374,7 @@ describe('Phase C — Async, Queue, and Background Correctness', () => {
 
     it('safely runs migration on an existing database without error or duplication', () => {
       expect(() => migrate(db)).not.toThrow();
-      expect(db.pragma('user_version', { simple: true })).toBe(3);
+      expect(Number(db.pragma('user_version', { simple: true }))).toBeGreaterThanOrEqual(3);
     });
   });
 

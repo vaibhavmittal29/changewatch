@@ -92,14 +92,10 @@ export function recordCheckFailure(
     `).run(eventId, subId, state.active_version_id, `Site outage detected: ${reason}`, nowIso);
     enqueueNotificationForEvent(db, eventId);
 
-    db.prepare(`
-      UPDATE sub_state
-      SET consecutive_failures = ?, is_currently_down = 1, last_down_alert_at = ?
-      WHERE subscription_id = ?
-    `).run(nextFailures, nowIso, subId);
+    db.prepare('UPDATE sub_state SET consecutive_failures = ?, is_currently_down = 1, last_down_alert_at = ? WHERE subscription_id = ?')
+      .run(nextFailures, nowIso, subId);
   } else {
-    db.prepare('UPDATE sub_state SET consecutive_failures = ? WHERE subscription_id = ?')
-      .run(nextFailures, subId);
+    db.prepare('UPDATE sub_state SET consecutive_failures = ? WHERE subscription_id = ?').run(nextFailures, subId);
   }
 }
 
@@ -124,7 +120,11 @@ export function evaluateSubscriptionChange(
   const normalized = normalizeText(extracted, filters, learned);
   const hash = hashContent(normalized);
 
-  const state = db.prepare('SELECT * FROM sub_state WHERE subscription_id = ?').get(sub.id) as SubStateRow;
+  let state = db.prepare('SELECT * FROM sub_state WHERE subscription_id = ?').get(sub.id) as SubStateRow | undefined;
+  if (!state) {
+    db.prepare('INSERT OR IGNORE INTO sub_state (subscription_id) VALUES (?)').run(sub.id);
+    state = db.prepare('SELECT * FROM sub_state WHERE subscription_id = ?').get(sub.id) as SubStateRow;
+  }
   const activeVersion = getActiveVersion(db, sub.id);
 
   // Recovery flow: if previously DOWN, create RECOVERED event
@@ -153,12 +153,7 @@ export function evaluateSubscriptionChange(
   // 3. Compare with active baseline hash
   if (activeVersion.content_hash === hash) {
     // Content unchanged: clear pending candidates (blip discarded if any)
-    db.prepare(`
-      UPDATE sub_state
-      SET pending_candidate_hash = NULL, pending_candidate_checks = 0, pending_observation_id = NULL
-      WHERE subscription_id = ?
-    `).run(sub.id);
-
+    db.prepare('UPDATE sub_state SET pending_candidate_hash = NULL, pending_candidate_checks = 0, pending_observation_id = NULL WHERE subscription_id = ?').run(sub.id);
     updateRollingWindow(db, sub.id, state.recent_checks_window, 'U');
     return { action: 'UNCHANGED', version: activeVersion, contentHash: hash, storedText: normalized };
   }
@@ -168,12 +163,7 @@ export function evaluateSubscriptionChange(
 
   if (!diffResult.meetsThreshold) {
     // Change below sensitivity threshold -> treat as unchanged
-    db.prepare(`
-      UPDATE sub_state
-      SET pending_candidate_hash = NULL, pending_candidate_checks = 0, pending_observation_id = NULL
-      WHERE subscription_id = ?
-    `).run(sub.id);
-
+    db.prepare('UPDATE sub_state SET pending_candidate_hash = NULL, pending_candidate_checks = 0, pending_observation_id = NULL WHERE subscription_id = ?').run(sub.id);
     updateRollingWindow(db, sub.id, state.recent_checks_window, 'U');
     return { action: 'UNCHANGED', version: activeVersion, contentHash: hash, storedText: normalized };
   }
@@ -212,18 +202,21 @@ export function evaluateSubscriptionChange(
   const inCooldown = Boolean(state.last_alert_sent_at) && (nowMs - lastAlertTime) < cooldownMs;
 
   const { isMatch, matchedPatterns } = evaluateKeywordRules(normalized, sub.keyword_rules);
-  const isSuppressed = inCooldown || !isMatch;
+  let suppressionReason: 'cooldown' | 'keyword_unmatched' | null = null;
+  if (!isMatch) suppressionReason = 'keyword_unmatched';
+  else if (inCooldown) suppressionReason = 'cooldown';
+  const isSuppressed = suppressionReason !== null;
   const summaryText = matchedPatterns.length > 0 ? `${diffResult.summary} (Matched: ${matchedPatterns.join(', ')})` : diffResult.summary;
 
   const eventId = crypto.randomUUID();
   db.prepare(`
     INSERT INTO change_events (
       id, subscription_id, previous_version_id, current_version_id,
-      event_type, suppressed, keyword_matches, summary, created_at
-    ) VALUES (?, ?, ?, ?, 'CHANGE', ?, ?, ?, ?)
+      event_type, suppressed, suppression_reason, keyword_matches, summary, created_at
+    ) VALUES (?, ?, ?, ?, 'CHANGE', ?, ?, ?, ?, ?)
   `).run(
     eventId, sub.id, activeVersion.id, newVersion.id,
-    isSuppressed ? 1 : 0, JSON.stringify(matchedPatterns), summaryText, nowIso
+    isSuppressed ? 1 : 0, suppressionReason, JSON.stringify(matchedPatterns), summaryText, nowIso
   );
   if (!isSuppressed) enqueueNotificationForEvent(db, eventId);
 

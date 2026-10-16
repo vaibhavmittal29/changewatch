@@ -125,6 +125,7 @@ CREATE TABLE IF NOT EXISTS change_events (
   current_version_id TEXT REFERENCES monitor_versions(id) ON DELETE SET NULL,
   event_type TEXT NOT NULL CHECK (event_type IN ('CHANGE','DOWN','RECOVERED')),
   suppressed INTEGER NOT NULL DEFAULT 0,
+  suppression_reason TEXT,
   text_diff TEXT,
   keyword_matches TEXT,
   summary TEXT NOT NULL,

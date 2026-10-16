@@ -107,25 +107,30 @@ diffRouter.get('/image', (req: Request, res: Response) => {
 
   const diffsDir = path.join(env.DATA_DIR, 'diffs');
   const diffFileName = `diff_${fromVersion.id}_${toVersion.id}.png`;
+  const diffMetaName = `diff_${fromVersion.id}_${toVersion.id}.json`;
   const diffFilePath = path.join(diffsDir, diffFileName);
+  const diffMetaPath = path.join(diffsDir, diffMetaName);
 
-  const buf1 = fs.readFileSync(fromVersion.screenshot_path);
-  const buf2 = fs.readFileSync(toVersion.screenshot_path);
-  const resultMeta = computeImageDiff(buf1, buf2, diffFilePath);
+  const fromPath = fromVersion.screenshot_path!;
+  const toPath = toVersion.screenshot_path!;
+  const runDiffAndCache = (): Record<string, unknown> => {
+    const diff = computeImageDiff(fs.readFileSync(fromPath), fs.readFileSync(toPath), diffFilePath);
+    const meta = { diffPixels: diff.diffPixels, totalPixels: diff.totalPixels, changedPct: diff.changedPct, width: diff.width, height: diff.height };
+    try { fs.writeFileSync(diffMetaPath, JSON.stringify(meta)); } catch {}
+    return meta;
+  };
+
+  let resultMeta: Record<string, unknown>;
+  if (fs.existsSync(diffFilePath) && fs.existsSync(diffMetaPath)) {
+    try { resultMeta = JSON.parse(fs.readFileSync(diffMetaPath, 'utf-8')); }
+    catch { resultMeta = runDiffAndCache(); }
+  } else {
+    resultMeta = runDiffAndCache();
+  }
 
   res.json({
-    from: {
-      id: fromVersion.id,
-      versionNumber: fromVersion.version_number,
-      createdAt: fromVersion.created_at,
-      screenshotUrl: `/api/diff/screenshot/${fromVersion.observation_id}`,
-    },
-    to: {
-      id: toVersion.id,
-      versionNumber: toVersion.version_number,
-      createdAt: toVersion.created_at,
-      screenshotUrl: `/api/diff/screenshot/${toVersion.observation_id}`,
-    },
+    from: { id: fromVersion.id, versionNumber: fromVersion.version_number, createdAt: fromVersion.created_at, screenshotUrl: `/api/diff/screenshot/${fromVersion.observation_id}` },
+    to: { id: toVersion.id, versionNumber: toVersion.version_number, createdAt: toVersion.created_at, screenshotUrl: `/api/diff/screenshot/${toVersion.observation_id}` },
     diffImageUrl: `/api/diff/image-file/${diffFileName}`,
     ...resultMeta,
   });
@@ -138,34 +143,20 @@ diffRouter.get('/image-file/:filename', (req: Request, res: Response) => {
   const userId = req.session!.userId;
   const filename = path.basename(String(req.params.filename));
   const match = filename.match(/^diff_([a-zA-Z0-9_-]+)_([a-zA-Z0-9_-]+)\.png$/);
-
-  if (!match) {
-    res.status(404).json({ error: 'Diff image not found' });
-    return;
-  }
+  if (!match) { res.status(404).json({ error: 'Diff image not found' }); return; }
 
   const [, fromId, toId] = match;
-  const db = getDb();
-  const versions = db.prepare(`
-    SELECT COUNT(*) as count
-    FROM monitor_versions v
+  const versions = getDb().prepare(`
+    SELECT COUNT(*) as count FROM monitor_versions v
     JOIN subscriptions s ON v.subscription_id = s.id
     WHERE v.id IN (?, ?) AND s.user_id = ?
   `).get(fromId, toId, userId) as { count: number } | undefined;
 
-  if (!versions || versions.count < 2) {
+  const fullPath = path.join(env.DATA_DIR, 'diffs', filename);
+  if (!versions || versions.count < 2 || !fs.existsSync(fullPath)) {
     res.status(404).json({ error: 'Diff image not found' });
     return;
   }
-
-  const diffsDir = path.join(env.DATA_DIR, 'diffs');
-  const fullPath = path.join(diffsDir, filename);
-
-  if (!fs.existsSync(fullPath)) {
-    res.status(404).json({ error: 'Diff image not found' });
-    return;
-  }
-
   res.setHeader('Content-Type', 'image/png');
   res.sendFile(fullPath);
 });
@@ -176,31 +167,17 @@ diffRouter.get('/image-file/:filename', (req: Request, res: Response) => {
 diffRouter.get('/screenshot/:observationId', (req: Request, res: Response) => {
   const userId = req.session!.userId;
   const obsId = path.basename(String(req.params.observationId));
-  const db = getDb();
-
-  const authorized = db.prepare(`
-    SELECT 1 FROM monitor_versions v
-    JOIN subscriptions s ON v.subscription_id = s.id
-    WHERE v.observation_id = ? AND s.user_id = ?
+  const authorized = getDb().prepare(`
+    SELECT 1 FROM monitor_versions v JOIN subscriptions s ON v.subscription_id = s.id WHERE v.observation_id = ? AND s.user_id = ?
     UNION
-    SELECT 1 FROM observations o
-    JOIN subscriptions s ON o.target_id = s.target_id AND o.capture_fingerprint = s.capture_fingerprint
-    WHERE o.id = ? AND s.user_id = ?
+    SELECT 1 FROM observations o JOIN subscriptions s ON o.target_id = s.target_id AND o.capture_fingerprint = s.capture_fingerprint WHERE o.id = ? AND s.user_id = ?
   `).get(obsId, userId, obsId, userId);
 
-  if (!authorized) {
+  const fullPath = path.join(env.DATA_DIR, 'screenshots', `${obsId}.png`);
+  if (!authorized || !fs.existsSync(fullPath)) {
     res.status(404).json({ error: 'Screenshot not found' });
     return;
   }
-
-  const screenshotsDir = path.join(env.DATA_DIR, 'screenshots');
-  const fullPath = path.join(screenshotsDir, `${obsId}.png`);
-
-  if (!fs.existsSync(fullPath)) {
-    res.status(404).json({ error: 'Screenshot not found' });
-    return;
-  }
-
   res.setHeader('Content-Type', 'image/png');
   res.sendFile(fullPath);
 });
