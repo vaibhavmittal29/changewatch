@@ -12,10 +12,9 @@ let sharedBrowser: Browser | null = null;
 
 export async function getBrowser(): Promise<Browser> {
   if (!sharedBrowser || !sharedBrowser.isConnected()) {
-    sharedBrowser = await chromium.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-dev-shm-usage'],
-    });
+    const args = ['--disable-dev-shm-usage'];
+    if (process.env.CHROMIUM_SANDBOX !== 'true') args.push('--no-sandbox');
+    sharedBrowser = await chromium.launch({ headless: true, args });
   }
   return sharedBrowser;
 }

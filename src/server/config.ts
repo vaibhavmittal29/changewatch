@@ -5,6 +5,17 @@ import path from 'node:path';
 // Load environment variables from .env if present
 dotenv.config();
 
+function calculateEntropy(str: string): number {
+  const freq: Record<string, number> = {};
+  for (const c of str) freq[c] = (freq[c] || 0) + 1;
+  let entropy = 0;
+  for (const count of Object.values(freq)) {
+    const p = count / str.length;
+    entropy -= p * Math.log2(p);
+  }
+  return entropy;
+}
+
 export const EnvSchema = z.object({
   PORT: z.coerce.number().default(3000),
   BASE_URL: z.string().transform(val => {
@@ -50,9 +61,11 @@ export const EnvSchema = z.object({
   const PREDICTABLE_SECRETS = [
     'changewatch_super_secure_random_key_min_32_chars_long_2026',
     '12345678901234567890123456789012',
+    'abcdefghijklmnopqrstuvwxyz123456',
+    'dev_changewatch_local_secret_key_min_32_chars_long',
   ];
   if (data.NODE_ENV === 'production') {
-    if (!data.APP_SECRET || PREDICTABLE_SECRETS.includes(data.APP_SECRET)) {
+    if (!data.APP_SECRET || PREDICTABLE_SECRETS.includes(data.APP_SECRET) || calculateEntropy(data.APP_SECRET) < 3.0 || new Set(data.APP_SECRET).size < 10) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['APP_SECRET'],

@@ -190,6 +190,23 @@ changewatch/
 
 ---
 
+## 4.1 AppSec Isolation & Chromium Sandboxing Guarantees
+
+1. **Production Secret Enforcement:**
+   - In production (`NODE_ENV=production`), `APP_SECRET` is strictly mandatory.
+   - Rejects well-known test keys and low-entropy strings via Shannon entropy verification (minimum 3.0 bits/char) and character diversity check (minimum 10 unique characters).
+   - Enforces PBKDF2 iterations $\ge 600,000$ in production mode.
+2. **Chromium Sandboxing & Rootless Operation:**
+   - In production Docker and Kubernetes deployments, ChangeWatch is architected to run under an unprivileged user (e.g. non-root UID 1000).
+   - When running in an unprivileged container with user namespaces or seccomp enabled, native Chromium sandboxing can be strictly enforced by setting `CHROMIUM_SANDBOX=true` (which strips `--no-sandbox` from Chromium arguments).
+   - In unprivileged CI/CD or container platforms lacking user namespaces, `--no-sandbox` is used as an operational fallback, supplemented by multi-layer AppSec controls:
+     - **CDP Request Interception:** Intercepts all redirects deterministically with `maxRedirects: 0` and resolves DNS targets, immediately aborting non-public, loopback, or cloud metadata (`169.254.169.254`) destinations.
+     - **Network Hardening:** Disables service workers, closes WebSockets, and aborts tracking scripts and unauthorized subresources.
+     - **Execution Timeout Caps:** Enforces a 15-second hard timeout per navigation.
+     - **Filesystem Isolation:** Playwright runs in headless mode without local storage persistence or access to `file://` schemes.
+
+---
+
 ## 5. Acceptance Matrix (Live Status)
 
 | Ref | Tier | Requirement | How verified | Status | Evidence |

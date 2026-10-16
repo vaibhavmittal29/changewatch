@@ -27,6 +27,32 @@ describe('Security Configuration & Secret Management (Criterion A)', () => {
     expect(res.success).toBe(false);
   });
 
+  it('rejects low-entropy or repeated character strings in production mode', () => {
+    const repeated = EnvSchema.safeParse({
+      NODE_ENV: 'production',
+      APP_SECRET: 'a'.repeat(32),
+      CONTACT_EMAIL: 'admin@example.com',
+      PBKDF2_ITERATIONS: 600000,
+    });
+    expect(repeated.success).toBe(false);
+
+    const alternating = EnvSchema.safeParse({
+      NODE_ENV: 'production',
+      APP_SECRET: 'abababababababababababababababab',
+      CONTACT_EMAIL: 'admin@example.com',
+      PBKDF2_ITERATIONS: 600000,
+    });
+    expect(alternating.success).toBe(false);
+  });
+
+  it('allows omitted APP_SECRET in development mode with fallback', () => {
+    const res = EnvSchema.safeParse({
+      NODE_ENV: 'development',
+      CONTACT_EMAIL: 'admin@example.com',
+    });
+    expect(res.success).toBe(true);
+  });
+
   it('accepts valid high-entropy APP_SECRET in production mode', () => {
     const res = EnvSchema.safeParse({
       NODE_ENV: 'production',
