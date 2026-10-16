@@ -22,12 +22,12 @@ const DestinationSchema = z.object({
   channel: z.enum(['discord', 'telegram', 'email', 'in_app']),
   config: z.record(z.unknown()),
   enabled: z.boolean().default(true),
-});
+}).strict();
 
 const TestDestinationSchema = z.object({
   channel: z.enum(['discord', 'telegram', 'email']),
   config: z.record(z.unknown()),
-});
+}).strict();
 
 interface DestinationDbRow {
   id: string;
@@ -74,7 +74,7 @@ notificationsRouter.get('/destinations', (req: Request, res: Response) => {
 
 /**
  * PUT /api/destinations
- * Creates or updates a destination with ownership verification and schema validation.
+ * Creates or updates a destination with ownership verification, masked secret preservation, and strict validation.
  */
 notificationsRouter.put('/destinations', (req: Request, res: Response) => {
   const parsed = DestinationSchema.safeParse(req.body);
@@ -87,54 +87,81 @@ notificationsRouter.put('/destinations', (req: Request, res: Response) => {
   const db = getDb();
   const { channel, config, enabled } = parsed.data;
 
+  // Preserve existing secrets if masked values (e.g. ••••) were sent back unchanged
+  const resolvedConfig: Record<string, unknown> = { ...config };
+  let existingDest: { id: string; user_id: string; destination_config: string } | undefined;
+
+  if (parsed.data.id) {
+    existingDest = db.prepare('SELECT id, user_id, destination_config FROM notification_destinations WHERE id = ?').get(parsed.data.id) as { id: string; user_id: string; destination_config: string } | undefined;
+    if (!existingDest) {
+      res.status(404).json({ error: 'Destination not found' });
+      return;
+    }
+    if (existingDest.user_id !== userId) {
+      res.status(403).json({ error: 'Forbidden: you do not own this destination' });
+      return;
+    }
+  } else {
+    existingDest = db.prepare('SELECT id, user_id, destination_config FROM notification_destinations WHERE user_id = ? AND channel = ?').get(userId, channel) as { id: string; user_id: string; destination_config: string } | undefined;
+  }
+
+  if (existingDest) {
+    try {
+      const prevConfig = decryptConfig<Record<string, unknown>>(existingDest.destination_config);
+      for (const [k, v] of Object.entries(resolvedConfig)) {
+        if (typeof v === 'string' && v.includes('•') && prevConfig[k]) {
+          resolvedConfig[k] = prevConfig[k];
+        }
+      }
+    } catch { /* proceed with resolvedConfig */ }
+  }
+
   try {
-    validateDestinationConfig(channel, config);
+    validateDestinationConfig(channel, resolvedConfig);
   } catch (err) {
     res.status(400).json({ error: err instanceof Error ? err.message : 'Invalid destination config' });
     return;
   }
 
-  const encryptedConfig = encryptConfig(config);
+  const encryptedConfig = encryptConfig(resolvedConfig);
 
-  if (parsed.data.id) {
-    const existing = db.prepare('SELECT id, user_id FROM notification_destinations WHERE id = ?').get(parsed.data.id) as { id: string; user_id: string } | undefined;
-    if (!existing) {
-      res.status(404).json({ error: 'Destination not found' });
-      return;
-    }
-    if (existing.user_id !== userId) {
-      res.status(403).json({ error: 'Forbidden: you do not own this destination' });
-      return;
-    }
-
+  if (existingDest && parsed.data.id) {
     db.prepare(`
       UPDATE notification_destinations
       SET channel = ?, destination_config = ?, enabled = ?
       WHERE id = ? AND user_id = ?
-    `).run(channel, encryptedConfig, enabled ? 1 : 0, parsed.data.id, userId);
+    `).run(channel, encryptedConfig, enabled ? 1 : 0, existingDest.id, userId);
 
     res.json({
-      id: parsed.data.id,
+      id: existingDest.id,
       channel,
-      config: maskDestinationConfig(config),
+      config: maskDestinationConfig(resolvedConfig),
       enabled,
       message: 'Destination updated successfully',
     });
     return;
   }
 
-  const newId = crypto.randomUUID();
-  db.prepare(`
-    INSERT INTO notification_destinations (id, user_id, channel, destination_config, enabled)
-    VALUES (?, ?, ?, ?, ?)
-  `).run(newId, userId, channel, encryptedConfig, enabled ? 1 : 0);
+  const newId = existingDest ? existingDest.id : crypto.randomUUID();
+  if (existingDest) {
+    db.prepare(`
+      UPDATE notification_destinations
+      SET destination_config = ?, enabled = ?
+      WHERE id = ? AND user_id = ?
+    `).run(encryptedConfig, enabled ? 1 : 0, existingDest.id, userId);
+  } else {
+    db.prepare(`
+      INSERT INTO notification_destinations (id, user_id, channel, destination_config, enabled)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(newId, userId, channel, encryptedConfig, enabled ? 1 : 0);
+  }
 
   res.json({
     id: newId,
     channel,
-    config: maskDestinationConfig(config),
+    config: maskDestinationConfig(resolvedConfig),
     enabled,
-    message: 'Destination created successfully',
+    message: existingDest ? 'Destination updated successfully' : 'Destination created successfully',
   });
 });
 
@@ -160,7 +187,7 @@ notificationsRouter.delete('/destinations/:id', (req: Request, res: Response) =>
 
 /**
  * POST /api/destinations/test
- * Sends a test alert directly after validating configuration.
+ * Sends a test alert directly after validating configuration and resolving masked secrets.
  */
 notificationsRouter.post('/destinations/test', async (req: Request, res: Response) => {
   const parsed = TestDestinationSchema.safeParse(req.body);
@@ -169,10 +196,25 @@ notificationsRouter.post('/destinations/test', async (req: Request, res: Respons
     return;
   }
 
+  const userId = req.session!.userId;
+  const db = getDb();
   const { channel, config } = parsed.data;
 
+  const resolvedConfig: Record<string, unknown> = { ...config };
+  const existingDest = db.prepare('SELECT destination_config FROM notification_destinations WHERE user_id = ? AND channel = ?').get(userId, channel) as { destination_config: string } | undefined;
+  if (existingDest) {
+    try {
+      const prevConfig = decryptConfig<Record<string, unknown>>(existingDest.destination_config);
+      for (const [k, v] of Object.entries(resolvedConfig)) {
+        if (typeof v === 'string' && v.includes('•') && prevConfig[k]) {
+          resolvedConfig[k] = prevConfig[k];
+        }
+      }
+    } catch { /* proceed */ }
+  }
+
   try {
-    validateDestinationConfig(channel, config);
+    validateDestinationConfig(channel, resolvedConfig);
   } catch (err) {
     res.status(400).json({ error: err instanceof Error ? err.message : 'Invalid destination config' });
     return;
@@ -188,11 +230,11 @@ notificationsRouter.post('/destinations/test', async (req: Request, res: Respons
 
   let result: DispatchResult;
   if (channel === 'discord') {
-    result = await dispatchDiscord(config, payload);
+    result = await dispatchDiscord(resolvedConfig, payload);
   } else if (channel === 'telegram') {
-    result = await dispatchTelegram(config, payload);
+    result = await dispatchTelegram(resolvedConfig, payload);
   } else if (channel === 'email') {
-    result = await dispatchEmail(config, payload);
+    result = await dispatchEmail(resolvedConfig, payload);
   } else {
     res.status(400).json({ error: 'Unsupported channel' });
     return;

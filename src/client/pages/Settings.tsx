@@ -26,7 +26,8 @@ export const Settings: React.FC<SettingsProps> = ({ csrfToken }) => {
           if (map.discord?.config?.webhookUrl) setDiscordWebhook(map.discord.config.webhookUrl);
           if (map.telegram?.config?.botToken) setTelegramToken(map.telegram.config.botToken);
           if (map.telegram?.config?.chatId) setTelegramChatId(map.telegram.config.chatId);
-          if (map.email?.config?.to) setEmailAddress(map.email.config.to);
+          if (map.email?.config?.toEmail) setEmailAddress(map.email.config.toEmail);
+          else if (map.email?.config?.to) setEmailAddress(map.email.config.to);
         }
       })
       .finally(() => setLoading(false));
@@ -34,12 +35,18 @@ export const Settings: React.FC<SettingsProps> = ({ csrfToken }) => {
 
   const handleSave = async (channel: string, config: Record<string, string>) => {
     setSaving(true);
+    setTestResult(null);
     try {
-      await fetch('/api/destinations', {
+      const res = await fetch('/api/destinations', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
-        body: JSON.stringify({ channel, destination_config: config, enabled: true }),
+        body: JSON.stringify({ channel, config, enabled: true }),
       });
+      const data = await res.json();
+      if (!res.ok) {
+        setTestResult({ channel, status: `ERROR_${res.status}`, message: data.error || 'Failed to save destination' });
+        return;
+      }
       setTestResult({ channel, status: 'SAVED', message: `${channel.toUpperCase()} destination saved successfully.` });
     } catch (err: unknown) {
       setTestResult({ channel, status: 'ERROR', message: err instanceof Error ? err.message : 'Save failed' });
@@ -51,13 +58,27 @@ export const Settings: React.FC<SettingsProps> = ({ csrfToken }) => {
   const handleSendTest = async (channel: string) => {
     setTestingChannel(channel);
     setTestResult(null);
+
+    let config: Record<string, string> = {};
+    if (channel === 'discord') config = { webhookUrl: discordWebhook };
+    if (channel === 'telegram') config = { botToken: telegramToken, chatId: telegramChatId };
+    if (channel === 'email') config = { toEmail: emailAddress };
+
     try {
       const res = await fetch('/api/destinations/test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
-        body: JSON.stringify({ channel }),
+        body: JSON.stringify({ channel, config }),
       });
       const data = await res.json();
+      if (!res.ok) {
+        setTestResult({
+          channel,
+          status: data.status || `ERROR_${res.status}`,
+          message: data.error || `Test alert failed with status ${res.status}`,
+        });
+        return;
+      }
       setTestResult({
         channel,
         status: data.status || 'SENT',
@@ -203,7 +224,7 @@ export const Settings: React.FC<SettingsProps> = ({ csrfToken }) => {
             className="flex-1 px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
           />
           <button
-            onClick={() => handleSave('email', { to: emailAddress })}
+            onClick={() => handleSave('email', { toEmail: emailAddress })}
             disabled={saving}
             className="px-4 py-2 bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-semibold text-xs rounded-xl transition cursor-pointer"
           >

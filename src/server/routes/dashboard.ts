@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { getDb } from '../db/index.js';
+import { ACTIVE_JOB_STATUSES } from '../queue/jobConstants.js';
 
 export const dashboardRouter = Router();
 
@@ -41,14 +42,15 @@ dashboardRouter.get('/dashboard', (req, res) => {
   const db = getDb();
   const userId = req.user!.id;
 
+  const activeStatusesSql = ACTIVE_JOB_STATUSES.map(s => `'${s}'`).join(', ');
   const rows = db.prepare(`
     SELECT s.id, s.name, s.interval_minutes, s.sensitivity, s.is_paused,
            t.canonical_url, t.hostname, t.origin, t.last_fetched_at as last_checked_at, t.last_fetch_outcome,
            COALESCE(st.is_noisy, 0) as is_noisy,
            COALESCE(st.is_currently_down, 0) as is_currently_down,
            (SELECT COUNT(*) FROM monitor_versions mv WHERE mv.subscription_id = s.id) as version_count,
-           (SELECT MAX(mv.created_at) FROM monitor_versions mv WHERE mv.subscription_id = s.id) as last_changed_at,
-           (SELECT COUNT(*) FROM jobs j WHERE j.target_id = s.target_id AND j.capture_fingerprint = s.capture_fingerprint AND j.status IN ('PENDING', 'RUNNING')) as active_jobs
+           (SELECT MAX(ce.created_at) FROM change_events ce WHERE ce.subscription_id = s.id AND ce.event_type = 'CHANGE') as last_changed_at,
+           (SELECT COUNT(*) FROM jobs j WHERE j.target_id = s.target_id AND j.capture_fingerprint = s.capture_fingerprint AND j.status IN (${activeStatusesSql})) as active_jobs
     FROM subscriptions s
     JOIN targets t ON t.id = s.target_id
     LEFT JOIN sub_state st ON st.subscription_id = s.id

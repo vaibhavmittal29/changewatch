@@ -1,0 +1,15 @@
+export const JOB_STATUSES = {
+  QUEUED: 'QUEUED',
+  CLAIMED: 'CLAIMED',
+  RUNNING: 'RUNNING',
+  COMPLETED: 'COMPLETED',
+  FAILED: 'FAILED',
+} as const;
+
+export type JobStatus = typeof JOB_STATUSES[keyof typeof JOB_STATUSES];
+
+export const ACTIVE_JOB_STATUSES = [
+  JOB_STATUSES.QUEUED,
+  JOB_STATUSES.CLAIMED,
+  JOB_STATUSES.RUNNING,
+] as const;

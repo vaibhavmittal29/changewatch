@@ -15,12 +15,12 @@ export const DiscordConfigSchema = z.object({
       return false;
     }
   }, 'Invalid Discord webhook URL format. Must be https://discord.com/api/webhooks/<id>/<token> with no credentials or custom port.'),
-});
+}).strict();
 
 export const TelegramConfigSchema = z.object({
   botToken: z.string().regex(/^\d+:[A-Za-z0-9_-]+$/, 'Invalid Telegram bot token format'),
   chatId: z.string().regex(/^-?\d+$/, 'Invalid Telegram chat ID format'),
-});
+}).strict();
 
 export const EmailConfigSchema = z.object({
   toEmail: z.string().email('Invalid recipient email address'),
@@ -35,7 +35,7 @@ export const EmailConfigSchema = z.object({
   smtpUser: z.string().optional(),
   smtpPass: z.string().optional(),
   fromEmail: z.string().email().optional(),
-});
+}).strict();
 
 export type ValidatedDiscordConfig = z.infer<typeof DiscordConfigSchema>;
 export type ValidatedTelegramConfig = z.infer<typeof TelegramConfigSchema>;

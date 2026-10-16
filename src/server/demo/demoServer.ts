@@ -152,7 +152,7 @@ Allow: /robots-allowed/
   });
 
   // 10. HTTP 429 with Retry-After (Backoff test)
-  app.get('/demo/rate-limit', (_req, res) => {
+  app.get(['/demo/rate-limit', '/demo/429'], (_req, res) => {
     res.status(429).setHeader('Retry-After', '60').send(`
       <!DOCTYPE html>
       <html><body>
@@ -183,7 +183,7 @@ Allow: /robots-allowed/
   });
 
   // 13. Always-different page (Noisy flag / cooldown test)
-  app.get('/demo/always-changing', (_req, res) => {
+  app.get(['/demo/always-changing', '/demo/always-different'], (_req, res) => {
     const randomContent = crypto.randomBytes(32).toString('hex');
     res.send(`
       <!DOCTYPE html>

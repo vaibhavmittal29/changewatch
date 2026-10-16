@@ -118,13 +118,15 @@ subscriptionsRouter.post('/', async (req, res) => {
   const feedToken = crypto.randomBytes(24).toString('hex');
   const now = new Date().toISOString();
 
+  let targetId = '';
   db.transaction(() => {
     let target = db.prepare('SELECT id FROM targets WHERE canonical_url = ?').get(canonicalInfo.canonicalUrl) as { id: string } | undefined;
     if (!target) {
-      const targetId = crypto.randomUUID();
-      db.prepare('INSERT INTO targets (id, canonical_url, hostname, origin, created_at) VALUES (?, ?, ?, ?, ?)').run(targetId, canonicalInfo.canonicalUrl, canonicalInfo.hostname, canonicalInfo.origin, now);
-      target = { id: targetId };
+      const newTargetId = crypto.randomUUID();
+      db.prepare('INSERT INTO targets (id, canonical_url, hostname, origin, created_at) VALUES (?, ?, ?, ?, ?)').run(newTargetId, canonicalInfo.canonicalUrl, canonicalInfo.hostname, canonicalInfo.origin, now);
+      target = { id: newTargetId };
     }
+    targetId = target.id;
     db.prepare(`
       INSERT INTO subscriptions (
         id, user_id, target_id, name, interval_minutes, next_check_at,
@@ -144,7 +146,7 @@ subscriptionsRouter.post('/', async (req, res) => {
     `).run(subscriptionId);
   })();
 
-  res.status(201).json({ id: subscriptionId, target_id: canonicalInfo.canonicalUrl, name, interval_minutes, next_check_at: now, feed_token: feedToken });
+  res.status(201).json({ id: subscriptionId, target_id: targetId, canonical_url: canonicalInfo.canonicalUrl, name, interval_minutes, next_check_at: now, feed_token: feedToken });
 });
 
 // GET /api/subscriptions/:id
@@ -162,7 +164,7 @@ subscriptionsRouter.get('/:id', (req, res) => {
   if (!sub) { res.status(404).json({ error: 'Subscription not found' }); return; }
   const versions = db.prepare('SELECT * FROM monitor_versions WHERE subscription_id = ? ORDER BY version_number DESC LIMIT 50').all(id);
   const events = db.prepare('SELECT * FROM change_events WHERE subscription_id = ? ORDER BY created_at DESC LIMIT 50').all(id);
-  const checkRuns = db.prepare('SELECT * FROM check_runs WHERE subscription_id = ? ORDER BY started_at DESC LIMIT 50').all(id);
+  const checkRuns = db.prepare('SELECT * FROM check_runs WHERE subscription_id = ? ORDER BY created_at DESC LIMIT 50').all(id);
   res.json({ subscription: sub, versions, events, checkRuns });
 });
 

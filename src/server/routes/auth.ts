@@ -150,3 +150,11 @@ authRouter.get('/me', (req, res) => {
     csrfToken: req.session.csrfToken,
   });
 });
+
+authRouter.get('/csrf', (req, res) => {
+  if (!req.session || !req.user) {
+    res.status(401).json({ error: 'Not authenticated', csrfToken: null });
+    return;
+  }
+  res.json({ csrfToken: req.session.csrfToken });
+});
