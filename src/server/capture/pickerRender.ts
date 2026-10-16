@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
-import { env } from '../config.js';
 import { getBrowser } from './playwrightCapture.js';
-import { validateUrl, isPublicIp } from './validateUrl.js';
+import { validateUrl } from './validateUrl.js';
+import { validateRouteUrl } from './routeValidation.js';
 import { ELEMENT_INSPECTOR_SCRIPT, type ElementBox } from './selectorGenerator.js';
 import { DEFAULT_CAPTURE_CONFIG, type CaptureConfig } from './captureConfig.js';
 
@@ -75,7 +75,7 @@ export async function renderPicker(
     // 1. Terminate WebSockets
     await page.routeWebSocket('**/*', (ws) => ws.close());
 
-    // 2. Route interception with SSRF check & tracker block
+    // 2. Route interception with SSRF check & tracker block (CW-SEC-01)
     await page.route('**/*', async (route) => {
       const request = route.request();
       const reqUrl = request.url();
@@ -84,10 +84,6 @@ export async function renderPicker(
       try {
         parsed = new URL(reqUrl);
       } catch {
-        return route.abort('blockedbyclient');
-      }
-
-      if (!['http:', 'https:', 'data:', 'blob:'].includes(parsed.protocol)) {
         return route.abort('blockedbyclient');
       }
 
@@ -100,17 +96,28 @@ export async function renderPicker(
         return route.abort('blockedbyclient');
       }
 
-      const isDemo = env.ALLOW_LOCAL_DEMO && (
-        (hostname === 'localhost' || hostname === '127.0.0.1') &&
-        parseInt(parsed.port || '80', 10) === env.DEMO_PORT
-      );
+      const validation = await validateRouteUrl(reqUrl);
+      if (!validation.allowed) {
+        return route.abort('blockedbyclient');
+      }
 
-      if (!isDemo && (parsed.protocol === 'http:' || parsed.protocol === 'https:')) {
-        if (/^\d+\.\d+\.\d+\.\d+$/.test(hostname) || hostname.includes(':')) {
-          if (!isPublicIp(hostname)) {
-            return route.abort('blockedbyclient');
+      if (request.isNavigationRequest() && request.frame() === page.mainFrame()) {
+        const fetched = await route.fetch({ maxRedirects: 0 });
+        if (fetched.status() >= 300 && fetched.status() < 400) {
+          const loc = fetched.headers()['location'];
+          if (loc) {
+            const redUrl = new URL(loc, reqUrl);
+            const redVal = await validateRouteUrl(redUrl.toString());
+            if (!redVal.allowed) {
+              return route.fulfill({
+                status: 403,
+                contentType: 'text/plain',
+                body: `SSRF_BLOCKED: Prohibited redirect destination '${redUrl.hostname}' (${redVal.reason})`,
+              });
+            }
           }
         }
+        return route.fulfill({ response: fetched });
       }
 
       return route.continue();

@@ -73,7 +73,9 @@ authRouter.post('/register', authRateLimiter, async (req, res) => {
     });
   } catch (err: unknown) {
     console.error('Error in /register:', err);
-    const message = err instanceof Error ? err.message : 'Internal server error';
+    const message = env.NODE_ENV === 'production'
+      ? 'Registration failed. Please try again later.'
+      : (err instanceof Error ? err.message : 'Internal server error');
     res.status(500).json({ error: message });
   }
 });

@@ -5,6 +5,9 @@ import { getDb } from '../db/index.js';
 import { env } from '../config.js';
 import { encryptConfig, decryptConfig, maskDestinationConfig } from '../notifications/crypto.js';
 import {
+  validateDestinationConfig,
+} from '../notifications/configValidation.js';
+import {
   dispatchDiscord,
   dispatchTelegram,
   dispatchEmail,
@@ -37,7 +40,7 @@ interface DestinationDbRow {
 
 /**
  * GET /api/destinations
- * Lists user's destinations with decrypted & masked sensitive fields (Section 9.9).
+ * Lists user's destinations with decrypted & masked sensitive fields.
  */
 notificationsRouter.get('/destinations', (req: Request, res: Response) => {
   const userId = req.session!.userId;
@@ -71,7 +74,7 @@ notificationsRouter.get('/destinations', (req: Request, res: Response) => {
 
 /**
  * PUT /api/destinations
- * Creates or updates a destination with AES-256-GCM encrypted configuration.
+ * Creates or updates a destination with ownership verification and schema validation.
  */
 notificationsRouter.put('/destinations', (req: Request, res: Response) => {
   const parsed = DestinationSchema.safeParse(req.body);
@@ -83,24 +86,55 @@ notificationsRouter.put('/destinations', (req: Request, res: Response) => {
   const userId = req.session!.userId;
   const db = getDb();
   const { channel, config, enabled } = parsed.data;
-  const id = parsed.data.id || crypto.randomUUID();
+
+  try {
+    validateDestinationConfig(channel, config);
+  } catch (err) {
+    res.status(400).json({ error: err instanceof Error ? err.message : 'Invalid destination config' });
+    return;
+  }
+
   const encryptedConfig = encryptConfig(config);
 
+  if (parsed.data.id) {
+    const existing = db.prepare('SELECT id, user_id FROM notification_destinations WHERE id = ?').get(parsed.data.id) as { id: string; user_id: string } | undefined;
+    if (!existing) {
+      res.status(404).json({ error: 'Destination not found' });
+      return;
+    }
+    if (existing.user_id !== userId) {
+      res.status(403).json({ error: 'Forbidden: you do not own this destination' });
+      return;
+    }
+
+    db.prepare(`
+      UPDATE notification_destinations
+      SET channel = ?, destination_config = ?, enabled = ?
+      WHERE id = ? AND user_id = ?
+    `).run(channel, encryptedConfig, enabled ? 1 : 0, parsed.data.id, userId);
+
+    res.json({
+      id: parsed.data.id,
+      channel,
+      config: maskDestinationConfig(config),
+      enabled,
+      message: 'Destination updated successfully',
+    });
+    return;
+  }
+
+  const newId = crypto.randomUUID();
   db.prepare(`
     INSERT INTO notification_destinations (id, user_id, channel, destination_config, enabled)
     VALUES (?, ?, ?, ?, ?)
-    ON CONFLICT(id) DO UPDATE SET
-      channel = excluded.channel,
-      destination_config = excluded.destination_config,
-      enabled = excluded.enabled
-  `).run(id, userId, channel, encryptedConfig, enabled ? 1 : 0);
+  `).run(newId, userId, channel, encryptedConfig, enabled ? 1 : 0);
 
   res.json({
-    id,
+    id: newId,
     channel,
     config: maskDestinationConfig(config),
     enabled,
-    message: 'Destination saved successfully',
+    message: 'Destination created successfully',
   });
 });
 
@@ -126,7 +160,7 @@ notificationsRouter.delete('/destinations/:id', (req: Request, res: Response) =>
 
 /**
  * POST /api/destinations/test
- * Sends a test alert directly to verify provider configuration.
+ * Sends a test alert directly after validating configuration.
  */
 notificationsRouter.post('/destinations/test', async (req: Request, res: Response) => {
   const parsed = TestDestinationSchema.safeParse(req.body);
@@ -136,6 +170,14 @@ notificationsRouter.post('/destinations/test', async (req: Request, res: Respons
   }
 
   const { channel, config } = parsed.data;
+
+  try {
+    validateDestinationConfig(channel, config);
+  } catch (err) {
+    res.status(400).json({ error: err instanceof Error ? err.message : 'Invalid destination config' });
+    return;
+  }
+
   const payload: NotificationPayload = {
     monitorName: 'ChangeWatch Test Notification',
     eventType: 'TEST',

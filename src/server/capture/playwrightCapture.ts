@@ -2,10 +2,9 @@ import { chromium, type Browser } from 'playwright';
 import crypto from 'node:crypto';
 import path from 'node:path';
 import fs from 'node:fs';
-import dns from 'node:dns/promises';
 import { env } from '../config.js';
 import { type CaptureConfig } from './captureConfig.js';
-import { isPublicIp } from './validateUrl.js';
+import { validateRouteUrl } from './routeValidation.js';
 import { extractText } from './extract.js';
 
 let sharedBrowser: Browser | null = null;
@@ -42,22 +41,6 @@ export interface CaptureResult {
 }
 
 const TRACKER_DOMAINS = ['google-analytics.com', 'googletagmanager.com', 'doubleclick.net', 'facebook.net', 'adnxs.com', 'criteo.com', 'hotjar.com'];
-
-async function isSafeRouteHost(host: string, port: number, isDemo: boolean): Promise<boolean> {
-  if (isDemo) return true;
-  const h = host.toLowerCase();
-  if (h === 'localhost' || h.endsWith('.localhost') || h.endsWith('.local') ||
-      h.endsWith('.internal') || h.endsWith('.lan') || h.endsWith('.arpa') ||
-      h.endsWith('.test') || h.endsWith('.example')) return false;
-  if (port !== 80 && port !== 443) return false;
-  if (/^\d+\.\d+\.\d+\.\d+$/.test(h) || h.includes(':')) return isPublicIp(h);
-  try {
-    const records = await dns.lookup(h, { all: true });
-    return Boolean(records && records.length > 0 && records.every(r => isPublicIp(r.address)));
-  } catch {
-    return false;
-  }
-}
 
 export async function capturePage(targetUrl: string, config: CaptureConfig, observationId?: string): Promise<CaptureResult> {
   const startTime = Date.now();
@@ -98,15 +81,8 @@ export async function capturePage(targetUrl: string, config: CaptureConfig, obse
         const host = parsed.hostname.toLowerCase();
         if (TRACKER_DOMAINS.some(d => host.endsWith(d))) return await route.abort('blockedbyclient');
 
-        const port = parseInt(parsed.port || (parsed.protocol === 'https:' ? '443' : '80'), 10);
-        const isDemo = env.ALLOW_LOCAL_DEMO &&
-          (host === 'localhost' || host === '127.0.0.1' || host === '::1') &&
-          port === env.DEMO_PORT;
-
-        if (parsed.protocol.startsWith('http') && host) {
-          const safe = await isSafeRouteHost(host, port, isDemo);
-          if (!safe) return await route.abort('blockedbyclient');
-        }
+        const validation = await validateRouteUrl(req.url());
+        if (!validation.allowed) return await route.abort('blockedbyclient');
 
         if (req.isNavigationRequest() && resType === 'document' && req.frame() === page.mainFrame()) {
           topLevelNavigations++;
@@ -115,14 +91,12 @@ export async function capturePage(targetUrl: string, config: CaptureConfig, obse
             const loc = fetched.headers()['location'];
             if (loc) {
               const redUrl = new URL(loc, req.url());
-              const redHost = redUrl.hostname.toLowerCase();
-              const redPort = parseInt(redUrl.port || (redUrl.protocol === 'https:' ? '443' : '80'), 10);
-              const redDemo = env.ALLOW_LOCAL_DEMO && (redHost === 'localhost' || redHost === '127.0.0.1' || redHost === '::1') && redPort === env.DEMO_PORT;
-              if (!(await isSafeRouteHost(redHost, redPort, redDemo))) {
+              const redVal = await validateRouteUrl(redUrl.toString());
+              if (!redVal.allowed) {
                 return await route.fulfill({
                   status: 403,
                   contentType: 'text/plain',
-                  body: `SSRF_BLOCKED: Prohibited redirect destination '${redHost}'`,
+                  body: `SSRF_BLOCKED: Prohibited redirect destination '${redUrl.hostname}' (${redVal.reason})`,
                 });
               }
             }
@@ -138,12 +112,9 @@ export async function capturePage(targetUrl: string, config: CaptureConfig, obse
     });
 
     // Validate target URL before navigation
-    const targetParsed = new URL(targetUrl);
-    const targetHost = targetParsed.hostname.toLowerCase();
-    const targetPort = parseInt(targetParsed.port || (targetParsed.protocol === 'https:' ? '443' : '80'), 10);
-    const targetIsDemo = env.ALLOW_LOCAL_DEMO && (targetHost === 'localhost' || targetHost === '127.0.0.1' || targetHost === '::1') && targetPort === env.DEMO_PORT;
-    if (!targetIsDemo && !(await isSafeRouteHost(targetHost, targetPort, false))) {
-      throw new Error(`SSRF guard blocked navigation to disallowed host '${targetHost}'`);
+    const targetValidation = await validateRouteUrl(targetUrl);
+    if (!targetValidation.allowed) {
+      throw new Error(`SSRF guard blocked navigation to disallowed target: ${targetValidation.reason}`);
     }
 
     // 3. Navigate with 30s timeout

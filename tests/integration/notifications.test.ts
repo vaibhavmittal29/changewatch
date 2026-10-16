@@ -70,7 +70,7 @@ describe('Phase 7 Integration: Notifications, Outbox Truthfulness, Idempotency &
     db.prepare(`
       INSERT INTO notification_destinations (id, user_id, channel, destination_config, enabled)
       VALUES (?, ?, 'discord', ?, 1)
-    `).run(discordDestId, userId, encryptConfig({ webhookUrl: 'https://discord.mock/webhook' }));
+    `).run(discordDestId, userId, encryptConfig({ webhookUrl: 'https://discord.com/api/webhooks/1234567890/mocktoken' }));
 
     db.prepare(`
       INSERT INTO notification_destinations (id, user_id, channel, destination_config, enabled)
@@ -121,7 +121,7 @@ describe('Phase 7 Integration: Notifications, Outbox Truthfulness, Idempotency &
     // Mock global fetch: Discord returns 500 error, Telegram returns 200 OK
     vi.spyOn(global, 'fetch').mockImplementation(async (url) => {
       const urlStr = String(url);
-      if (urlStr.includes('discord.mock')) {
+      if (urlStr.includes('discord.com')) {
         return new Response(JSON.stringify({ message: 'Internal Server Error' }), { status: 500 });
       }
       if (urlStr.includes('api.telegram.org')) {

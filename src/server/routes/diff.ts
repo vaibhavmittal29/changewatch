@@ -109,19 +109,9 @@ diffRouter.get('/image', (req: Request, res: Response) => {
   const diffFileName = `diff_${fromVersion.id}_${toVersion.id}.png`;
   const diffFilePath = path.join(diffsDir, diffFileName);
 
-  let resultMeta: { diffPixels: number; totalPixels: number; changedPct: number; width: number; height: number };
-
-  if (fs.existsSync(diffFilePath)) {
-    // If already computed and cached, we can re-read or calculate fast
-    const buf1 = fs.readFileSync(fromVersion.screenshot_path);
-    const buf2 = fs.readFileSync(toVersion.screenshot_path);
-    const computed = computeImageDiff(buf1, buf2, diffFilePath);
-    resultMeta = computed;
-  } else {
-    const buf1 = fs.readFileSync(fromVersion.screenshot_path);
-    const buf2 = fs.readFileSync(toVersion.screenshot_path);
-    resultMeta = computeImageDiff(buf1, buf2, diffFilePath);
-  }
+  const buf1 = fs.readFileSync(fromVersion.screenshot_path);
+  const buf2 = fs.readFileSync(toVersion.screenshot_path);
+  const resultMeta = computeImageDiff(buf1, buf2, diffFilePath);
 
   res.json({
     from: {
@@ -145,7 +135,29 @@ diffRouter.get('/image', (req: Request, res: Response) => {
  * GET /api/diff/image-file/:filename
  */
 diffRouter.get('/image-file/:filename', (req: Request, res: Response) => {
+  const userId = req.session!.userId;
   const filename = path.basename(String(req.params.filename));
+  const match = filename.match(/^diff_([a-zA-Z0-9_-]+)_([a-zA-Z0-9_-]+)\.png$/);
+
+  if (!match) {
+    res.status(404).json({ error: 'Diff image not found' });
+    return;
+  }
+
+  const [, fromId, toId] = match;
+  const db = getDb();
+  const versions = db.prepare(`
+    SELECT COUNT(*) as count
+    FROM monitor_versions v
+    JOIN subscriptions s ON v.subscription_id = s.id
+    WHERE v.id IN (?, ?) AND s.user_id = ?
+  `).get(fromId, toId, userId) as { count: number } | undefined;
+
+  if (!versions || versions.count < 2) {
+    res.status(404).json({ error: 'Diff image not found' });
+    return;
+  }
+
   const diffsDir = path.join(env.DATA_DIR, 'diffs');
   const fullPath = path.join(diffsDir, filename);
 
@@ -162,7 +174,25 @@ diffRouter.get('/image-file/:filename', (req: Request, res: Response) => {
  * GET /api/diff/screenshot/:observationId
  */
 diffRouter.get('/screenshot/:observationId', (req: Request, res: Response) => {
+  const userId = req.session!.userId;
   const obsId = path.basename(String(req.params.observationId));
+  const db = getDb();
+
+  const authorized = db.prepare(`
+    SELECT 1 FROM monitor_versions v
+    JOIN subscriptions s ON v.subscription_id = s.id
+    WHERE v.observation_id = ? AND s.user_id = ?
+    UNION
+    SELECT 1 FROM observations o
+    JOIN subscriptions s ON o.target_id = s.target_id AND o.capture_fingerprint = s.capture_fingerprint
+    WHERE o.id = ? AND s.user_id = ?
+  `).get(obsId, userId, obsId, userId);
+
+  if (!authorized) {
+    res.status(404).json({ error: 'Screenshot not found' });
+    return;
+  }
+
   const screenshotsDir = path.join(env.DATA_DIR, 'screenshots');
   const fullPath = path.join(screenshotsDir, `${obsId}.png`);
 
@@ -176,7 +206,7 @@ diffRouter.get('/screenshot/:observationId', (req: Request, res: Response) => {
 });
 
 /**
- * GET /api/versions/:id
+ * GET /api/diff/version/:id
  */
 diffRouter.get('/version/:id', (req: Request, res: Response) => {
   const userId = req.session!.userId;
