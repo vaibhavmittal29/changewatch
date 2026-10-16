@@ -7,6 +7,7 @@ import { calculateDiff, type SensitivityLevel } from './diffSummary.js';
 import { getActiveVersion, commitNextVersion, createBaselineVersion, type MonitorVersionRow } from './versions.js';
 import type { NoiseFilterConfig } from './noiseFilters.js';
 import { enqueueNotificationForEvent } from '../notifications/outbox.js';
+import { evaluateKeywordRules } from './keywordRules.js';
 
 export interface SubscriptionRecord {
   id: string;
@@ -210,11 +211,9 @@ export function evaluateSubscriptionChange(
   const lastAlertTime = state.last_alert_sent_at ? new Date(state.last_alert_sent_at).getTime() : 0;
   const inCooldown = Boolean(state.last_alert_sent_at) && (nowMs - lastAlertTime) < cooldownMs;
 
-  const rules = parseJson<string[]>(sub.keyword_rules || '[]', []);
-  const keywordMatches = rules.filter(kw => normalized.toLowerCase().includes(kw.toLowerCase()));
-  const keywordSuppressed = rules.length > 0 && keywordMatches.length === 0;
-  const isSuppressed = inCooldown || keywordSuppressed;
-  const summaryText = keywordMatches.length > 0 ? `${diffResult.summary} (Matched: ${keywordMatches.join(', ')})` : diffResult.summary;
+  const { isMatch, matchedPatterns } = evaluateKeywordRules(normalized, sub.keyword_rules);
+  const isSuppressed = inCooldown || !isMatch;
+  const summaryText = matchedPatterns.length > 0 ? `${diffResult.summary} (Matched: ${matchedPatterns.join(', ')})` : diffResult.summary;
 
   const eventId = crypto.randomUUID();
   db.prepare(`
@@ -224,7 +223,7 @@ export function evaluateSubscriptionChange(
     ) VALUES (?, ?, ?, ?, 'CHANGE', ?, ?, ?, ?)
   `).run(
     eventId, sub.id, activeVersion.id, newVersion.id,
-    isSuppressed ? 1 : 0, JSON.stringify(keywordMatches), summaryText, nowIso
+    isSuppressed ? 1 : 0, JSON.stringify(matchedPatterns), summaryText, nowIso
   );
   if (!isSuppressed) enqueueNotificationForEvent(db, eventId);
 

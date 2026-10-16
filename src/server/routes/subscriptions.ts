@@ -6,15 +6,13 @@ import { captureFingerprint } from '../capture/captureConfig.js';
 import { validateUrl } from '../capture/validateUrl.js';
 import { env } from '../config.js';
 import { deleteSubscriptionCascade } from '../maintenance/deleteFlow.js';
+import { KeywordRulesArraySchema } from '../engine/keywordRules.js';
 
 export const subscriptionsRouter = Router();
 
 const CreateSubscriptionSchema = z.object({
   url: z.string().refine(val => {
-    try {
-      const u = new URL(val);
-      return u.protocol === 'http:' || u.protocol === 'https:';
-    } catch { return false; }
+    try { const u = new URL(val); return u.protocol === 'http:' || u.protocol === 'https:'; } catch { return false; }
   }, 'Must be a valid HTTP or HTTPS URL'),
   name: z.string().min(1).max(100),
   interval_minutes: z.coerce.number().int(),
@@ -23,6 +21,7 @@ const CreateSubscriptionSchema = z.object({
   include_selectors: z.array(z.string()).default([]),
   ignore_selectors: z.array(z.string()).default([]),
   noise_filters: z.object({ timestamps: z.boolean().default(true), counters: z.boolean().default(true), tokens: z.boolean().default(true) }).default({ timestamps: true, counters: true, tokens: true }),
+  keyword_rules: KeywordRulesArraySchema.optional().default([]),
 });
 
 const UpdateSubscriptionSchema = z.object({
@@ -33,6 +32,7 @@ const UpdateSubscriptionSchema = z.object({
   include_selectors: z.array(z.string()).optional(),
   ignore_selectors: z.array(z.string()).optional(),
   noise_filters: z.object({ timestamps: z.boolean().optional(), counters: z.boolean().optional(), tokens: z.boolean().optional() }).optional(),
+  keyword_rules: KeywordRulesArraySchema.optional(),
   is_paused: z.boolean().optional(),
 });
 
@@ -56,7 +56,7 @@ subscriptionsRouter.get('/', (req, res) => {
   const userId = req.user!.id;
   const rows = db.prepare(`
     SELECT s.id, s.name, s.interval_minutes, s.next_check_at, s.sensitivity, s.include_selectors, s.ignore_selectors,
-           s.noise_filters, s.is_paused, s.capture_config, s.capture_fingerprint, s.created_at,
+           s.noise_filters, s.keyword_rules, s.is_paused, s.capture_config, s.capture_fingerprint, s.created_at,
            t.id as target_id, t.canonical_url, t.hostname, t.origin, t.last_fetched_at, t.last_fetch_outcome,
            st.is_currently_down, st.is_noisy, st.consecutive_failures,
            (SELECT COUNT(*) FROM monitor_versions mv WHERE mv.subscription_id = s.id) as version_count,
@@ -74,7 +74,7 @@ subscriptionsRouter.post('/', async (req, res) => {
     res.status(400).json({ error: 'Validation failed', details: parsed.error.format() });
     return;
   }
-  const { url, name, interval_minutes, sensitivity, capture_config, include_selectors, ignore_selectors, noise_filters } = parsed.data;
+  const { url, name, interval_minutes, sensitivity, capture_config, include_selectors, ignore_selectors, noise_filters, keyword_rules } = parsed.data;
   const db = getDb();
   const userId = req.user!.id;
 
@@ -130,12 +130,12 @@ subscriptionsRouter.post('/', async (req, res) => {
         capture_config, capture_fingerprint, sensitivity,
         include_selectors, ignore_selectors, noise_filters,
         learned_ignore_patterns, keyword_rules, is_paused, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '[]', '[]', 0, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '[]', ?, 0, ?)
     `).run(
       subscriptionId, userId, target.id, name, interval_minutes, now,
       JSON.stringify(config), fingerprint, sensitivity,
       JSON.stringify(include_selectors), JSON.stringify(ignore_selectors),
-      JSON.stringify(noise_filters), now
+      JSON.stringify(noise_filters), JSON.stringify(keyword_rules || []), now
     );
     db.prepare(`
       INSERT INTO sub_state (subscription_id, consecutive_failures, is_currently_down, recent_checks_window, is_noisy)
@@ -210,30 +210,26 @@ subscriptionsRouter.patch('/:id', (req, res) => {
     newFiltersStr = JSON.stringify({ ...current, ...updates.noise_filters });
   }
 
+  const newKwRules = updates.keyword_rules !== undefined ? JSON.stringify(updates.keyword_rules) : null;
+
   db.prepare(`
     UPDATE subscriptions
-    SET name = COALESCE(?, name),
-        interval_minutes = COALESCE(?, interval_minutes),
+    SET name = COALESCE(?, name), interval_minutes = COALESCE(?, interval_minutes),
         sensitivity = COALESCE(?, sensitivity),
         include_selectors = COALESCE(?, include_selectors),
         ignore_selectors = COALESCE(?, ignore_selectors),
         noise_filters = COALESCE(?, noise_filters),
+        keyword_rules = COALESCE(?, keyword_rules),
         is_paused = COALESCE(?, is_paused),
-        capture_config = ?,
-        capture_fingerprint = ?
+        capture_config = ?, capture_fingerprint = ?
     WHERE id = ? AND user_id = ?
   `).run(
-    updates.name ?? null,
-    updates.interval_minutes ?? null,
-    updates.sensitivity ?? null,
+    updates.name ?? null, updates.interval_minutes ?? null, updates.sensitivity ?? null,
     updates.include_selectors ? JSON.stringify(updates.include_selectors) : null,
     updates.ignore_selectors ? JSON.stringify(updates.ignore_selectors) : null,
-    newFiltersStr,
+    newFiltersStr, newKwRules,
     updates.is_paused !== undefined ? (updates.is_paused ? 1 : 0) : null,
-    newConfigStr,
-    newFingerprint,
-    id,
-    userId
+    newConfigStr, newFingerprint, id, userId
   );
 
   res.json({ ok: true, id });

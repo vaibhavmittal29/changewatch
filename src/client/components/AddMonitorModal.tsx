@@ -24,6 +24,7 @@ export const AddMonitorModal: React.FC<AddMonitorModalProps> = ({
   const [filterTimestamps, setFilterTimestamps] = useState(true);
   const [filterCounters, setFilterCounters] = useState(true);
   const [filterTokens, setFilterTokens] = useState(true);
+  const [keywordRules, setKeywordRules] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,14 +45,12 @@ export const AddMonitorModal: React.FC<AddMonitorModalProps> = ({
         include_selectors: includeSelectors ? includeSelectors.split('\n').map(s => s.trim()).filter(Boolean) : [],
         ignore_selectors: ignoreSelectors ? ignoreSelectors.split('\n').map(s => s.trim()).filter(Boolean) : [],
         noise_filters: { timestamps: filterTimestamps, counters: filterCounters, tokens: filterTokens },
+        keyword_rules: keywordRules ? keywordRules.split(/[\n,]/).map(s => s.trim()).filter(Boolean) : [],
       };
 
       const res = await fetch('/api/subscriptions', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': csrfToken,
-        },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
         body: JSON.stringify(payload),
       });
 
@@ -200,21 +199,25 @@ export const AddMonitorModal: React.FC<AddMonitorModalProps> = ({
                 />
               </div>
 
+              <div>
+                <label className="block font-medium text-slate-300 mb-1">
+                  Keyword Alert Rules (e.g. discount, regex:\$\d+, !sold out)
+                </label>
+                <input
+                  type="text"
+                  value={keywordRules}
+                  onChange={e => setKeywordRules(e.target.value)}
+                  placeholder="Comma-separated keywords or regex:pattern (empty alerts on any change)"
+                  className="w-full p-2 bg-slate-950 border border-slate-700/80 rounded-lg text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 font-mono text-xs"
+                />
+              </div>
+
               <div className="pt-1">
-                <span className="block font-medium text-slate-300 mb-1.5">Automatic Noise Filtering</span>
-                <div className="space-y-1.5 text-slate-400">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" checked={filterTimestamps} onChange={e => setFilterTimestamps(e.target.checked)} className="rounded text-emerald-500" />
-                    <span>Filter timestamps &amp; relative dates (e.g. 5 minutes ago)</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" checked={filterCounters} onChange={e => setFilterCounters(e.target.checked)} className="rounded text-emerald-500" />
-                    <span>Filter view/visitor counters &amp; large digits</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" checked={filterTokens} onChange={e => setFilterTokens(e.target.checked)} className="rounded text-emerald-500" />
-                    <span>Filter nonces, hashes &amp; UUIDs</span>
-                  </label>
+                <span className="block font-medium text-slate-300 mb-1">Automatic Noise Filtering</span>
+                <div className="space-y-1 text-slate-400">
+                  <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={filterTimestamps} onChange={e => setFilterTimestamps(e.target.checked)} className="rounded text-emerald-500" /><span>Filter timestamps &amp; relative dates</span></label>
+                  <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={filterCounters} onChange={e => setFilterCounters(e.target.checked)} className="rounded text-emerald-500" /><span>Filter view/visitor counters &amp; digits</span></label>
+                  <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={filterTokens} onChange={e => setFilterTokens(e.target.checked)} className="rounded text-emerald-500" /><span>Filter nonces, hashes &amp; UUIDs</span></label>
                 </div>
               </div>
             </div>
