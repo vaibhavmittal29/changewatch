@@ -19,6 +19,7 @@ import * as geminiModule from '../../src/server/engine/geminiSummary.js';
 
 let testDbPath: string;
 let db: Database.Database;
+const originalDigestHour = process.env.DIGEST_HOUR;
 
 describe('Phase C — Async, Queue, and Background Correctness', () => {
   beforeEach(() => {
@@ -33,6 +34,8 @@ describe('Phase C — Async, Queue, and Background Correctness', () => {
   });
 
   afterEach(() => {
+    if (originalDigestHour !== undefined) process.env.DIGEST_HOUR = originalDigestHour;
+    else delete process.env.DIGEST_HOUR;
     try {
       closeDb();
       if (fs.existsSync(testDbPath)) fs.unlinkSync(testDbPath);

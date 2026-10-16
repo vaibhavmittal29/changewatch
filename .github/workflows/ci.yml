@@ -13,10 +13,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js 20
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
@@ -26,4 +26,11 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Run Verification Pipeline
+        env:
+          NODE_ENV: test
+          NODE_OPTIONS: "--max-old-space-size=4096"
+          APP_SECRET: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+          COOKIE_SECRET: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+          ALLOW_NO_SANDBOX: "true"
+          CI: "true"
         run: npm run verify
