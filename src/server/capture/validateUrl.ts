@@ -65,11 +65,12 @@ export async function validateUrl(rawUrl: string): Promise<ValidatedUrlResult> {
   }
 
   const { canonicalUrl, hostname, origin } = canonicalizeUrl(rawUrl);
+  const hostClean = hostname.replace(/^\[|\]$/g, '');
 
   const port = parsedUrl.port ? parseInt(parsedUrl.port, 10) : (parsedUrl.protocol === 'https:' ? 443 : 80);
 
   // Check demo origin allowlist
-  const isDemoHost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
+  const isDemoHost = hostClean === 'localhost' || hostClean === '127.0.0.1' || hostClean === '::1';
   const isDemoPort = port === env.DEMO_PORT;
   const isDemoOrigin = env.ALLOW_LOCAL_DEMO && isDemoHost && isDemoPort;
 
@@ -83,9 +84,14 @@ export async function validateUrl(rawUrl: string): Promise<ValidatedUrlResult> {
   let resolvedIps: string[] = [];
   if (isDemoOrigin) {
     resolvedIps = ['127.0.0.1'];
+  } else if (ipaddr.isValid(hostClean)) {
+    if (!isPublicIp(hostClean)) {
+      throw new Error(`SSRF guard blocked '${hostname}': resolved to non-public IP address '${hostClean}'`);
+    }
+    resolvedIps = [hostClean];
   } else {
     try {
-      const records = await dns.lookup(hostname, { all: true });
+      const records = await dns.lookup(hostClean, { all: true });
       if (!records || records.length === 0) {
         throw new Error(`DNS resolution failed: no records found for host '${hostname}'`);
       }

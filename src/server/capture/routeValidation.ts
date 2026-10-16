@@ -56,15 +56,16 @@ export async function validateRouteUrl(urlStr: string): Promise<RouteValidationR
     return { allowed: false, reason: `BLOCKED_HOSTNAME: ${hostname}` };
   }
 
-  if (/^\d+\.\d+\.\d+\.\d+$/.test(hostname) || hostname.includes(':')) {
-    if (!isPublicIp(hostname)) {
+  const hostClean = hostname.replace(/^\[|\]$/g, '');
+  if (/^\d+\.\d+\.\d+\.\d+$/.test(hostClean) || hostClean.includes(':')) {
+    if (!isPublicIp(hostClean)) {
       return { allowed: false, reason: `PRIVATE_OR_RESERVED_IP: ${hostname}` };
     }
-    return { allowed: true, resolvedIps: [hostname] };
+    return { allowed: true, resolvedIps: [hostClean] };
   }
 
   try {
-    const records = await dns.lookup(hostname, { all: true });
+    const records = await dns.lookup(hostClean, { all: true });
     if (!records || records.length === 0) {
       return { allowed: false, reason: `DNS_RESOLUTION_EMPTY: ${hostname}` };
     }
