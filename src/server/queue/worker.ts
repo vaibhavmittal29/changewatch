@@ -171,7 +171,7 @@ export class WorkerPool {
       `).get(targetId, fingerprint, reuseCutoff) as ObservationRow | undefined;
 
       if (existingObs) {
-        processOkOutcome(this.db, dueSubs, jobId, targetId, 0, true, existingObs);
+        await processOkOutcome(this.db, dueSubs, jobId, targetId, 0, true, existingObs);
         return;
       }
 
@@ -217,7 +217,7 @@ export class WorkerPool {
           captured_at: capturedAt,
         };
 
-        processOkOutcome(this.db, dueSubs, jobId, targetId, durationMs, false, newObs);
+        await processOkOutcome(this.db, dueSubs, jobId, targetId, durationMs, false, newObs);
       } else {
         handleFailedCapture(
           this.db, dueSubs, jobId, targetId, classification.outcome, classification.reason,

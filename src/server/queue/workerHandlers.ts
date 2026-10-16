@@ -1,8 +1,10 @@
 import crypto from 'node:crypto';
 import type { Database } from 'better-sqlite3';
+import { env } from '../config.js';
 import { PolitenessManager } from './politeness.js';
 import { completeJob, failOrRetryJob } from './jobs.js';
 import { evaluateSubscriptionChange, recordCheckFailure } from '../engine/changeDetector.js';
+import { generateChangeSummary } from '../engine/geminiSummary.js';
 
 export interface WorkerCandidateRow {
   id: string;
@@ -86,7 +88,7 @@ export function handleBlockedByRobots(db: Database, candidate: WorkerCandidateRo
   failOrRetryJob(db, candidate.id, reason, false);
 }
 
-export function processOkOutcome(
+export async function processOkOutcome(
   db: Database,
   dueSubs: SubscriptionRow[],
   jobId: string,
@@ -94,9 +96,33 @@ export function processOkOutcome(
   durationMs: number,
   wasDeduplicated: boolean,
   observation: ObservationRow
-): void {
+): Promise<void> {
   for (const sub of dueSubs) {
     const decision = evaluateSubscriptionChange(db, sub, observation);
+
+    if (decision.action === 'CHANGE_CONFIRMED' && decision.changeEventId && env.GEMINI_API_KEY) {
+      try {
+        const ev = db.prepare('SELECT summary, previous_version_id, current_version_id FROM change_events WHERE id = ?').get(decision.changeEventId) as { summary: string; previous_version_id: string | null; current_version_id: string | null } | undefined;
+        if (ev?.previous_version_id && ev?.current_version_id) {
+          const vPrev = db.prepare('SELECT stored_text FROM monitor_versions WHERE id = ?').get(ev.previous_version_id) as { stored_text: string } | undefined;
+          const vCurr = db.prepare('SELECT stored_text FROM monitor_versions WHERE id = ?').get(ev.current_version_id) as { stored_text: string } | undefined;
+          if (vPrev && vCurr) {
+            const aiRes = await generateChangeSummary(
+              `--- Previous\n${vPrev.stored_text.slice(0, 500)}\n+++ Current\n${vCurr.stored_text.slice(0, 500)}`,
+              ev.summary
+            );
+            if (aiRes.source === 'gemini') {
+              db.prepare('UPDATE change_events SET summary = ? WHERE id = ?').run(aiRes.summary, decision.changeEventId);
+              if (decision.version) {
+                db.prepare('UPDATE monitor_versions SET change_summary = ? WHERE id = ?').run(aiRes.summary, decision.version.id);
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('[processOkOutcome] Failed to enrich with Gemini summary:', err);
+      }
+    }
 
     recordCheckRun(db, sub.id, targetId, jobId, 'OK', null, 200, durationMs, wasDeduplicated);
     db.prepare('UPDATE sub_state SET consecutive_failures = 0 WHERE subscription_id = ?').run(sub.id);
