@@ -29,7 +29,7 @@ const ApprovePatternsSchema = z.object({
 export const subscriptionActionsRouter = Router();
 
 // POST /api/subscriptions/:id/check-now
-subscriptionActionsRouter.post('/subscriptions/:id/check-now', (req, res) => {
+subscriptionActionsRouter.post(['/subscriptions/:id/check-now', '/:id/check-now'], (req, res) => {
   const { id } = req.params;
   const userId = req.user!.id;
   const db = getDb();
@@ -58,7 +58,7 @@ subscriptionActionsRouter.post('/subscriptions/:id/check-now', (req, res) => {
 });
 
 // POST /api/subscriptions/:id/pause
-subscriptionActionsRouter.post('/subscriptions/:id/pause', (req, res) => {
+subscriptionActionsRouter.post(['/subscriptions/:id/pause', '/:id/pause'], (req, res) => {
   const { id } = req.params;
   const userId = req.user!.id;
   const db = getDb();
@@ -74,7 +74,7 @@ subscriptionActionsRouter.post('/subscriptions/:id/pause', (req, res) => {
 });
 
 // POST /api/subscriptions/:id/resume
-subscriptionActionsRouter.post('/subscriptions/:id/resume', (req, res) => {
+subscriptionActionsRouter.post(['/subscriptions/:id/resume', '/:id/resume'], (req, res) => {
   const { id } = req.params;
   const userId = req.user!.id;
   const db = getDb();
@@ -98,7 +98,7 @@ subscriptionActionsRouter.post('/subscriptions/:id/resume', (req, res) => {
 });
 
 // GET /api/subscriptions/:id/timeline
-subscriptionActionsRouter.get('/subscriptions/:id/timeline', (req, res) => {
+subscriptionActionsRouter.get(['/subscriptions/:id/timeline', '/:id/timeline'], (req, res) => {
   const { id } = req.params;
   const userId = req.user!.id;
   const db = getDb();
@@ -169,7 +169,7 @@ function checkUserProbeRateLimit(userId: string): boolean {
   return true;
 }
 
-subscriptionActionsRouter.post('/subscriptions/:id/probe', (req, res) => {
+subscriptionActionsRouter.post(['/subscriptions/:id/probe', '/:id/probe'], (req, res) => {
   const { id } = req.params;
   const userId = req.user!.id;
 
@@ -195,7 +195,7 @@ subscriptionActionsRouter.post('/subscriptions/:id/probe', (req, res) => {
 });
 
 // POST /api/subscriptions/:id/approve-patterns
-subscriptionActionsRouter.post('/subscriptions/:id/approve-patterns', (req, res) => {
+subscriptionActionsRouter.post(['/subscriptions/:id/approve-patterns', '/:id/approve-patterns'], (req, res) => {
   const parsed = ApprovePatternsSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: 'Validation failed', details: parsed.error.issues });

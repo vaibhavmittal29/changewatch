@@ -34,16 +34,23 @@ export function createApp() {
   app.use('/api', verifyCsrf);
 
   // Stretch routes (includes public RSS feed and protected numeric-history)
-  app.use('/api', stretchRouter);
+  app.use('/api/subscriptions', stretchRouter);
 
   // Authenticated API routes
   app.use('/api/subscriptions', requireAuth, subscriptionsRouter);
-  app.use('/api', requireAuth, subscriptionActionsRouter);
-  app.use('/api', requireAuth, dashboardRouter);
+  app.use('/api/subscriptions', requireAuth, subscriptionActionsRouter);
+  app.use('/api/dashboard', requireAuth, dashboardRouter);
   app.use('/api/diff', requireAuth, diffRouter);
-  app.use('/api', requireAuth, notificationsRouter);
+  app.use('/api/versions', requireAuth, diffRouter);
+  app.use('/api/destinations', requireAuth, notificationsRouter);
+  app.use('/api/notifications', requireAuth, notificationsRouter);
   app.use('/api/demo', requireAuth, demoRouter);
   app.use('/api/picker', requireAuth, pickerRouter);
+
+  // 404 handler for unmatched /api routes
+  app.all('/api/{*splat}', (_req, res) => {
+    res.status(404).json({ error: 'Endpoint not found' });
+  });
 
   return app;
 }

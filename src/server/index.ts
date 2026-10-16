@@ -52,7 +52,11 @@ async function startServer() {
     const clientDist = path.resolve(process.cwd(), 'dist/client');
     if (fs.existsSync(clientDist)) {
       app.use(express.static(clientDist));
-      app.get('*', (_req, res) => {
+      app.get('/{*splat}', (req, res) => {
+        if (req.path.startsWith('/api')) {
+          res.status(404).json({ error: 'Endpoint not found' });
+          return;
+        }
         res.sendFile(path.join(clientDist, 'index.html'));
       });
       console.log(`[Server] Serving production static bundle from ${clientDist}`);
@@ -71,15 +75,24 @@ async function startServer() {
     notificationWorker.stop();
 
     // Drain in-flight jobs up to a 10s deadline
-    await Promise.allSettled([
+    const drainResults = await Promise.allSettled([
       workerPool.waitForIdle(10_000),
       notificationWorker.waitForIdle(10_000),
     ]);
+    const failedDrain = drainResults.some(r => r.status === 'rejected');
+    if (failedDrain) {
+      console.warn('[ChangeWatch] Warning: Shutdown deadline elapsed before all workers became idle');
+    } else {
+      console.log('[ChangeWatch] All workers drained idle successfully');
+    }
 
     await closeBrowser().catch(() => {});
     try {
       db.close();
-    } catch {}
+      console.log('[ChangeWatch] Database closed cleanly');
+    } catch (err) {
+      console.error('[ChangeWatch] Error closing database:', err);
+    }
 
     server.close(() => {
       process.exit(0);

@@ -185,7 +185,7 @@ diffRouter.get('/screenshot/:observationId', (req: Request, res: Response) => {
 /**
  * GET /api/diff/version/:id
  */
-diffRouter.get('/version/:id', (req: Request, res: Response) => {
+diffRouter.get(['/version/:id', '/versions/:id', '/:id'], (req: Request, res: Response) => {
   const userId = req.session!.userId;
   const version = getVersionWithContext(String(req.params.id), userId);
 

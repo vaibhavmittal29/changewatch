@@ -49,7 +49,7 @@ export function extractNumericValue(text: string, label?: string): number | null
  * GET /api/subscriptions/:id/numeric-history (STRETCH Item)
  * Extracts numeric metrics across version history for Chart.js / Canvas visualization.
  */
-stretchRouter.get('/subscriptions/:id/numeric-history', requireAuth, (req, res) => {
+stretchRouter.get(['/subscriptions/:id/numeric-history', '/:id/numeric-history'], requireAuth, (req, res) => {
   const { id } = req.params;
   const userId = req.user!.id;
   const label = typeof req.query.label === 'string' ? req.query.label : undefined;
@@ -81,7 +81,7 @@ stretchRouter.get('/subscriptions/:id/numeric-history', requireAuth, (req, res) 
  * POST /api/subscriptions/:id/rotate-feed-token (Phase 9 RSS Privacy)
  * Rotates or generates a revocable feed token for private RSS syndication.
  */
-stretchRouter.post('/subscriptions/:id/rotate-feed-token', requireAuth, (req, res) => {
+stretchRouter.post(['/subscriptions/:id/rotate-feed-token', '/:id/rotate-feed-token'], requireAuth, (req, res) => {
   const { id } = req.params;
   const userId = req.user!.id;
   const db = getDb();
@@ -107,7 +107,7 @@ stretchRouter.post('/subscriptions/:id/rotate-feed-token', requireAuth, (req, re
  * Generates an RSS 2.0 XML feed authenticated via revocable feed token.
  * Feeds do not leak sequential IDs, private URLs, or cross-tenant subscription metadata.
  */
-stretchRouter.get('/subscriptions/:id/rss', (req, res) => {
+stretchRouter.get(['/subscriptions/:id/rss', '/:id/rss'], (req, res) => {
   const { id } = req.params;
   const token = (req.query.token as string | undefined) || req.headers.authorization?.replace(/^Bearer\s+/i, '');
 

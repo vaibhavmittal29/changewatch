@@ -59,7 +59,7 @@ function preserveMaskedSecrets(
  * GET /api/destinations
  * Lists user's destinations with decrypted & masked sensitive fields.
  */
-notificationsRouter.get('/destinations', (req: Request, res: Response) => {
+notificationsRouter.get(['/destinations', '/'], (req: Request, res: Response) => {
   const userId = req.session!.userId;
   const db = getDb();
 
@@ -93,7 +93,7 @@ notificationsRouter.get('/destinations', (req: Request, res: Response) => {
  * PUT /api/destinations
  * Creates or updates a destination with ownership verification and strict validation.
  */
-notificationsRouter.put('/destinations', (req: Request, res: Response) => {
+notificationsRouter.put(['/destinations', '/'], (req: Request, res: Response) => {
   const parsed = DestinationSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: 'Invalid destination payload', details: parsed.error.issues });
@@ -151,7 +151,7 @@ notificationsRouter.put('/destinations', (req: Request, res: Response) => {
 /**
  * DELETE /api/destinations/:id
  */
-notificationsRouter.delete('/destinations/:id', (req: Request, res: Response) => {
+notificationsRouter.delete(['/destinations/:id', '/:id'], (req: Request, res: Response) => {
   const userId = req.session!.userId;
   const db = getDb();
   const destId = String(req.params.id);
@@ -167,7 +167,7 @@ notificationsRouter.delete('/destinations/:id', (req: Request, res: Response) =>
 /**
  * POST /api/destinations/test
  */
-notificationsRouter.post('/destinations/test', async (req: Request, res: Response) => {
+notificationsRouter.post(['/destinations/test', '/test', '/notifications/test'], async (req: Request, res: Response) => {
   const parsed = TestDestinationSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: 'Invalid test payload', details: parsed.error.issues });

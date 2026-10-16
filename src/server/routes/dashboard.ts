@@ -38,7 +38,7 @@ export function computeStatusBadge(row: SubscriptionDashboardRow): DashboardStat
 }
 
 // GET /api/dashboard
-dashboardRouter.get('/dashboard', (req, res) => {
+dashboardRouter.get(['/', '/dashboard'], (req, res) => {
   const db = getDb();
   const userId = req.user!.id;
 
