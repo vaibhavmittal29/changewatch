@@ -1,9 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { getDb } from '../db/index.js';
-import { enqueueCheckJob } from '../queue/jobs.js';
-import { CaptureConfigSchema } from '../capture/captureConfig.js';
-import { probeTargetVolatility } from '../engine/volatility.js';
+import { enqueueCheckJob, enqueueProbeJob } from '../queue/jobs.js';
 
 const ApprovePatternsSchema = z.object({
   patterns: z.array(
@@ -157,30 +155,43 @@ subscriptionActionsRouter.get('/subscriptions/:id/timeline', (req, res) => {
 });
 
 // POST /api/subscriptions/:id/probe
-subscriptionActionsRouter.post('/subscriptions/:id/probe', async (req, res) => {
+const userProbeCounts = new Map<string, { count: number; resetAt: number }>();
+
+function checkUserProbeRateLimit(userId: string): boolean {
+  const now = Date.now();
+  const entry = userProbeCounts.get(userId);
+  if (!entry || now > entry.resetAt) {
+    userProbeCounts.set(userId, { count: 1, resetAt: now + 60_000 });
+    return true;
+  }
+  if (entry.count >= 5) return false;
+  entry.count++;
+  return true;
+}
+
+subscriptionActionsRouter.post('/subscriptions/:id/probe', (req, res) => {
   const { id } = req.params;
   const userId = req.user!.id;
-  const db = getDb();
 
+  if (!checkUserProbeRateLimit(userId)) {
+    res.status(429).json({ error: 'Too many probe requests. Rate limit is 5 per minute.' });
+    return;
+  }
+
+  const db = getDb();
   const sub = db.prepare(`
-    SELECT s.id, s.capture_config, t.canonical_url
+    SELECT s.id, s.target_id
     FROM subscriptions s
-    JOIN targets t ON t.id = s.target_id
     WHERE s.id = ? AND s.user_id = ?
-  `).get(id, userId) as { id: string; capture_config: string; canonical_url: string } | undefined;
+  `).get(id, userId) as { id: string; target_id: string } | undefined;
 
   if (!sub) {
     res.status(404).json({ error: 'Subscription not found' });
     return;
   }
 
-  try {
-    const config = CaptureConfigSchema.parse(JSON.parse(sub.capture_config || '{}'));
-    const probeResult = await probeTargetVolatility(sub.canonical_url, config, 1000);
-    res.json({ ok: true, ...probeResult });
-  } catch (err: unknown) {
-    res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
-  }
+  const job = enqueueProbeJob(db, sub.target_id, sub.id);
+  res.status(202).json({ ok: true, jobId: job.id, message: 'Probe queued' });
 });
 
 // POST /api/subscriptions/:id/approve-patterns

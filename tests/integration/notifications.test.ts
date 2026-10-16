@@ -9,6 +9,7 @@ import { encryptConfig } from '../../src/server/notifications/crypto.js';
 import { enqueueNotificationForEvent } from '../../src/server/notifications/outbox.js';
 import { NotificationWorker } from '../../src/server/notifications/worker.js';
 import { processDailyDigest } from '../../src/server/notifications/digest.js';
+import * as configValidationModule from '../../src/server/notifications/configValidation.js';
 
 describe('Phase 7 Integration: Notifications, Outbox Truthfulness, Idempotency & Digest (Criteria V, W, DG, EM)', () => {
   const testDbPath = path.resolve(process.cwd(), './data/test_notifications.db');
@@ -189,6 +190,7 @@ describe('Phase 7 Integration: Notifications, Outbox Truthfulness, Idempotency &
     vi.spyOn(nodemailer, 'createTransport').mockReturnValue({
       sendMail: sendMailMock,
     } as unknown as ReturnType<typeof nodemailer.createTransport>);
+    vi.spyOn(configValidationModule, 'validateSmtpHostDns').mockResolvedValue(true);
 
     // Update email config with host
     db.prepare('UPDATE notification_destinations SET destination_config = ? WHERE id = ?')

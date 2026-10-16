@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import Database from 'better-sqlite3';
 import {
   Scheduler,
@@ -8,6 +8,12 @@ import {
 
 describe('Phase 4 Unit: Scheduler Clock Injection, Timezone & Retry-Safe Daily Tasks', () => {
   const dummyDb = new Database(':memory:');
+
+  beforeEach(() => {
+    try {
+      dummyDb.exec('DROP TABLE IF EXISTS daily_task_ledger');
+    } catch {}
+  });
 
   describe('Timezone Derivation & Resolution', () => {
     it('resolves valid timezones accurately', () => {

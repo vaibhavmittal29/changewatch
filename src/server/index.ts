@@ -69,7 +69,18 @@ async function startServer() {
     scheduler.stop();
     workerPool.stop();
     notificationWorker.stop();
+
+    // Drain in-flight jobs up to a 10s deadline
+    await Promise.allSettled([
+      workerPool.waitForIdle(10_000),
+      notificationWorker.waitForIdle(10_000),
+    ]);
+
     await closeBrowser().catch(() => {});
+    try {
+      db.close();
+    } catch {}
+
     server.close(() => {
       process.exit(0);
     });

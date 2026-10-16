@@ -8,6 +8,53 @@ export interface RetentionCleanupResult {
   unlinkedScreenshots: number;
 }
 
+export function ensureOrphanCleanupTable(db = getDb()): void {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS orphan_cleanup_queue (
+      file_path TEXT PRIMARY KEY,
+      failed_attempts INTEGER NOT NULL DEFAULT 1,
+      last_attempt_at TEXT NOT NULL
+    );
+  `);
+}
+
+export function recordFailedScreenshotUnlink(filePath: string, db = getDb()): void {
+  try {
+    ensureOrphanCleanupTable(db);
+    db.prepare(`
+      INSERT INTO orphan_cleanup_queue (file_path, failed_attempts, last_attempt_at)
+      VALUES (?, 1, ?)
+      ON CONFLICT(file_path) DO UPDATE SET
+        failed_attempts = failed_attempts + 1,
+        last_attempt_at = excluded.last_attempt_at
+    `).run(filePath, new Date().toISOString());
+  } catch (err) {
+    console.warn(`[cleanup] Failed to record orphan unlink failure for ${filePath}:`, err);
+  }
+}
+
+export function retryFailedUnlinks(db = getDb()): number {
+  ensureOrphanCleanupTable(db);
+  const rows = db.prepare('SELECT file_path, failed_attempts FROM orphan_cleanup_queue').all() as Array<{ file_path: string; failed_attempts: number }>;
+  let cleaned = 0;
+  for (const row of rows) {
+    if (!fs.existsSync(row.file_path)) {
+      db.prepare('DELETE FROM orphan_cleanup_queue WHERE file_path = ?').run(row.file_path);
+      cleaned++;
+    } else {
+      try {
+        fs.unlinkSync(row.file_path);
+        db.prepare('DELETE FROM orphan_cleanup_queue WHERE file_path = ?').run(row.file_path);
+        cleaned++;
+      } catch {
+        db.prepare('UPDATE orphan_cleanup_queue SET failed_attempts = failed_attempts + 1, last_attempt_at = ? WHERE file_path = ?')
+          .run(new Date().toISOString(), row.file_path);
+      }
+    }
+  }
+  return cleaned;
+}
+
 /**
  * Routine retention cleanup (Requirement Z).
  * Deletes observations older than OBSERVATION_RETENTION_DAYS (default 30 days)
@@ -16,6 +63,8 @@ export interface RetentionCleanupResult {
  */
 export function runRetentionCleanup(retentionDays = env.OBSERVATION_RETENTION_DAYS): RetentionCleanupResult {
   const db = getDb();
+  retryFailedUnlinks(db);
+
   const cutoffMs = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
   const cutoffIso = new Date(cutoffMs).toISOString();
 
@@ -49,6 +98,7 @@ export function runRetentionCleanup(retentionDays = env.OBSERVATION_RETENTION_DA
         unlinkedScreenshots++;
       } catch (err) {
         console.warn(`Retention cleanup: failed to unlink screenshot ${row.screenshot_path}:`, err);
+        recordFailedScreenshotUnlink(row.screenshot_path, db);
       }
     }
   }

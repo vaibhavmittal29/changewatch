@@ -38,6 +38,23 @@ interface DestinationDbRow {
   created_at: string;
 }
 
+function preserveMaskedSecrets(
+  rawConfig: Record<string, unknown>,
+  encryptedPrevConfig?: string
+): Record<string, unknown> {
+  const resolved = { ...rawConfig };
+  if (!encryptedPrevConfig) return resolved;
+  try {
+    const prev = decryptConfig<Record<string, unknown>>(encryptedPrevConfig);
+    for (const [k, v] of Object.entries(resolved)) {
+      if (typeof v === 'string' && v.includes('•') && prev[k]) {
+        resolved[k] = prev[k];
+      }
+    }
+  } catch {}
+  return resolved;
+}
+
 /**
  * GET /api/destinations
  * Lists user's destinations with decrypted & masked sensitive fields.
@@ -74,7 +91,7 @@ notificationsRouter.get('/destinations', (req: Request, res: Response) => {
 
 /**
  * PUT /api/destinations
- * Creates or updates a destination with ownership verification, masked secret preservation, and strict validation.
+ * Creates or updates a destination with ownership verification and strict validation.
  */
 notificationsRouter.put('/destinations', (req: Request, res: Response) => {
   const parsed = DestinationSchema.safeParse(req.body);
@@ -87,10 +104,7 @@ notificationsRouter.put('/destinations', (req: Request, res: Response) => {
   const db = getDb();
   const { channel, config, enabled } = parsed.data;
 
-  // Preserve existing secrets if masked values (e.g. ••••) were sent back unchanged
-  const resolvedConfig: Record<string, unknown> = { ...config };
   let existingDest: { id: string; user_id: string; destination_config: string } | undefined;
-
   if (parsed.data.id) {
     existingDest = db.prepare('SELECT id, user_id, destination_config FROM notification_destinations WHERE id = ?').get(parsed.data.id) as { id: string; user_id: string; destination_config: string } | undefined;
     if (!existingDest) {
@@ -105,16 +119,7 @@ notificationsRouter.put('/destinations', (req: Request, res: Response) => {
     existingDest = db.prepare('SELECT id, user_id, destination_config FROM notification_destinations WHERE user_id = ? AND channel = ?').get(userId, channel) as { id: string; user_id: string; destination_config: string } | undefined;
   }
 
-  if (existingDest) {
-    try {
-      const prevConfig = decryptConfig<Record<string, unknown>>(existingDest.destination_config);
-      for (const [k, v] of Object.entries(resolvedConfig)) {
-        if (typeof v === 'string' && v.includes('•') && prevConfig[k]) {
-          resolvedConfig[k] = prevConfig[k];
-        }
-      }
-    } catch { /* proceed with resolvedConfig */ }
-  }
+  const resolvedConfig = preserveMaskedSecrets(config, existingDest?.destination_config);
 
   try {
     validateDestinationConfig(channel, resolvedConfig);
@@ -124,40 +129,18 @@ notificationsRouter.put('/destinations', (req: Request, res: Response) => {
   }
 
   const encryptedConfig = encryptConfig(resolvedConfig);
+  const targetId = existingDest ? existingDest.id : crypto.randomUUID();
 
-  if (existingDest && parsed.data.id) {
-    db.prepare(`
-      UPDATE notification_destinations
-      SET channel = ?, destination_config = ?, enabled = ?
-      WHERE id = ? AND user_id = ?
-    `).run(channel, encryptedConfig, enabled ? 1 : 0, existingDest.id, userId);
-
-    res.json({
-      id: existingDest.id,
-      channel,
-      config: maskDestinationConfig(resolvedConfig),
-      enabled,
-      message: 'Destination updated successfully',
-    });
-    return;
-  }
-
-  const newId = existingDest ? existingDest.id : crypto.randomUUID();
   if (existingDest) {
-    db.prepare(`
-      UPDATE notification_destinations
-      SET destination_config = ?, enabled = ?
-      WHERE id = ? AND user_id = ?
-    `).run(encryptedConfig, enabled ? 1 : 0, existingDest.id, userId);
+    db.prepare('UPDATE notification_destinations SET channel = ?, destination_config = ?, enabled = ? WHERE id = ? AND user_id = ?')
+      .run(channel, encryptedConfig, enabled ? 1 : 0, targetId, userId);
   } else {
-    db.prepare(`
-      INSERT INTO notification_destinations (id, user_id, channel, destination_config, enabled)
-      VALUES (?, ?, ?, ?, ?)
-    `).run(newId, userId, channel, encryptedConfig, enabled ? 1 : 0);
+    db.prepare('INSERT INTO notification_destinations (id, user_id, channel, destination_config, enabled) VALUES (?, ?, ?, ?, ?)')
+      .run(targetId, userId, channel, encryptedConfig, enabled ? 1 : 0);
   }
 
   res.json({
-    id: newId,
+    id: targetId,
     channel,
     config: maskDestinationConfig(resolvedConfig),
     enabled,
@@ -173,21 +156,16 @@ notificationsRouter.delete('/destinations/:id', (req: Request, res: Response) =>
   const db = getDb();
   const destId = String(req.params.id);
 
-  const result = db.prepare(`
-    DELETE FROM notification_destinations WHERE id = ? AND user_id = ?
-  `).run(destId, userId);
-
+  const result = db.prepare('DELETE FROM notification_destinations WHERE id = ? AND user_id = ?').run(destId, userId);
   if (result.changes === 0) {
     res.status(404).json({ error: 'Destination not found' });
     return;
   }
-
   res.json({ success: true, message: 'Destination removed' });
 });
 
 /**
  * POST /api/destinations/test
- * Sends a test alert directly after validating configuration and resolving masked secrets.
  */
 notificationsRouter.post('/destinations/test', async (req: Request, res: Response) => {
   const parsed = TestDestinationSchema.safeParse(req.body);
@@ -200,18 +178,8 @@ notificationsRouter.post('/destinations/test', async (req: Request, res: Respons
   const db = getDb();
   const { channel, config } = parsed.data;
 
-  const resolvedConfig: Record<string, unknown> = { ...config };
   const existingDest = db.prepare('SELECT destination_config FROM notification_destinations WHERE user_id = ? AND channel = ?').get(userId, channel) as { destination_config: string } | undefined;
-  if (existingDest) {
-    try {
-      const prevConfig = decryptConfig<Record<string, unknown>>(existingDest.destination_config);
-      for (const [k, v] of Object.entries(resolvedConfig)) {
-        if (typeof v === 'string' && v.includes('•') && prevConfig[k]) {
-          resolvedConfig[k] = prevConfig[k];
-        }
-      }
-    } catch { /* proceed */ }
-  }
+  const resolvedConfig = preserveMaskedSecrets(config, existingDest?.destination_config);
 
   try {
     validateDestinationConfig(channel, resolvedConfig);
@@ -229,13 +197,10 @@ notificationsRouter.post('/destinations/test', async (req: Request, res: Respons
   };
 
   let result: DispatchResult;
-  if (channel === 'discord') {
-    result = await dispatchDiscord(resolvedConfig, payload);
-  } else if (channel === 'telegram') {
-    result = await dispatchTelegram(resolvedConfig, payload);
-  } else if (channel === 'email') {
-    result = await dispatchEmail(resolvedConfig, payload);
-  } else {
+  if (channel === 'discord') result = await dispatchDiscord(resolvedConfig, payload);
+  else if (channel === 'telegram') result = await dispatchTelegram(resolvedConfig, payload);
+  else if (channel === 'email') result = await dispatchEmail(resolvedConfig, payload);
+  else {
     res.status(400).json({ error: 'Unsupported channel' });
     return;
   }
@@ -253,7 +218,6 @@ notificationsRouter.post('/destinations/test', async (req: Request, res: Respons
 
 /**
  * GET /api/notifications
- * Returns recent in-app outbox records for the user.
  */
 notificationsRouter.get('/notifications', (req: Request, res: Response) => {
   const userId = req.session!.userId;
@@ -270,11 +234,7 @@ notificationsRouter.get('/notifications', (req: Request, res: Response) => {
 
   const notifications = rows.map(r => {
     let parsedPayload: unknown = null;
-    try {
-      parsedPayload = JSON.parse(String(r.payload));
-    } catch {
-      parsedPayload = r.payload;
-    }
+    try { parsedPayload = JSON.parse(String(r.payload)); } catch { parsedPayload = r.payload; }
     return { ...r, payload: parsedPayload };
   });
 

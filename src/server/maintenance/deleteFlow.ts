@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import { getDb } from '../db/index.js';
+import { recordFailedScreenshotUnlink } from './cleanup.js';
 
 interface DeleteResult {
   deletedSubscriptionId: string;
@@ -67,6 +68,7 @@ export function deleteSubscriptionCascade(subscriptionId: string, userId: string
         screenshotsRemoved++;
       } catch (err) {
         console.warn(`Failed to unlink screenshot ${orphan.screenshot_path}:`, err);
+        recordFailedScreenshotUnlink(orphan.screenshot_path, db);
       }
     }
   }

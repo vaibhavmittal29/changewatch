@@ -116,10 +116,22 @@ export class Scheduler {
     const currentDate = now || this.clock();
     const { dateStr, hour } = getZonedDateAndHour(currentDate, this.timezone);
 
-    if (hour === env.DIGEST_HOUR && this.lastDailyRunDate !== dateStr) {
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS daily_task_ledger (
+        task_date TEXT PRIMARY KEY,
+        completed_at TEXT NOT NULL
+      );
+    `);
+
+    const alreadyRun = this.lastDailyRunDate === dateStr ||
+      Boolean(this.db.prepare('SELECT task_date FROM daily_task_ledger WHERE task_date = ?').get(dateStr));
+
+    if (hour >= env.DIGEST_HOUR && !alreadyRun) {
       try {
         this.digestHandler(this.db, dateStr);
         this.cleanupHandler(env.OBSERVATION_RETENTION_DAYS);
+        this.db.prepare('INSERT OR REPLACE INTO daily_task_ledger (task_date, completed_at) VALUES (?, ?)')
+          .run(dateStr, new Date().toISOString());
         this.lastDailyRunDate = dateStr;
         return true;
       } catch (err) {

@@ -15,6 +15,7 @@ import {
   handleBlockedByRobots,
   processOkOutcome,
   handleFailedCapture,
+  executeProbeJob,
 } from './workerHandlers.js';
 
 export { type WorkerCandidateRow, type SubscriptionRow, type ObservationRow } from './workerHandlers.js';
@@ -140,6 +141,11 @@ export class WorkerPool {
     startJob(this.db, jobId, this.workerId);
 
     try {
+      if (candidate.kind === 'PROBE') {
+        await executeProbeJob(this.db, candidate, jobId, canonicalUrl, hostname);
+        return;
+      }
+
       // 1. Robots.txt evaluation
       const robots = await checkRobotsPermission(this.db, canonicalUrl);
       if (!robots.allowed) {

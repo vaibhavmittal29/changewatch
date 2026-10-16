@@ -23,6 +23,7 @@ export interface OutboxRow {
 export class NotificationWorker {
   private isRunning = false;
   private loopTimer: NodeJS.Timeout | null = null;
+  private isProcessing = false;
 
   constructor(
     private readonly db: Database,
@@ -43,6 +44,14 @@ export class NotificationWorker {
     this.isRunning = false;
   }
 
+  public async waitForIdle(timeoutMs = 10000): Promise<void> {
+    const start = Date.now();
+    while (this.isProcessing) {
+      if (Date.now() - start > timeoutMs) break;
+      await new Promise(r => setTimeout(r, 50));
+    }
+  }
+
   private scheduleNextPoll(): void {
     if (!this.isRunning) return;
     this.loopTimer = setTimeout(async () => {
@@ -60,21 +69,27 @@ export class NotificationWorker {
    * Processes a batch of queued or retrying notification outbox items.
    */
   public async processOutboxBatch(batchSize = 10): Promise<number> {
-    const nowIso = new Date().toISOString();
-    const rows = this.db.prepare(`
-      SELECT id, user_id, kind, change_event_id, channel, destination_id, payload, status, attempts
-      FROM notification_outbox
-      WHERE status IN ('QUEUED', 'RETRYING')
-        AND (next_attempt_at IS NULL OR next_attempt_at <= ?)
-      ORDER BY created_at ASC
-      LIMIT ?
-    `).all(nowIso, batchSize) as OutboxRow[];
+    if (this.isProcessing) return 0;
+    this.isProcessing = true;
+    try {
+      const nowIso = new Date().toISOString();
+      const rows = this.db.prepare(`
+        SELECT id, user_id, kind, change_event_id, channel, destination_id, payload, status, attempts
+        FROM notification_outbox
+        WHERE status IN ('QUEUED', 'RETRYING')
+          AND (next_attempt_at IS NULL OR next_attempt_at <= ?)
+        ORDER BY created_at ASC
+        LIMIT ?
+      `).all(nowIso, batchSize) as OutboxRow[];
 
-    for (const row of rows) {
-      await this.processSingleItem(row);
+      for (const row of rows) {
+        await this.processSingleItem(row);
+      }
+
+      return rows.length;
+    } finally {
+      this.isProcessing = false;
     }
-
-    return rows.length;
   }
 
   private async processSingleItem(row: OutboxRow): Promise<void> {

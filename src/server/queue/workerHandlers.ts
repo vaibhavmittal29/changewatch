@@ -3,6 +3,9 @@ import type { Database } from 'better-sqlite3';
 import { env } from '../config.js';
 import { PolitenessManager } from './politeness.js';
 import { completeJob, failOrRetryJob } from './jobs.js';
+import { checkRobotsPermission } from './robots.js';
+import { probeTargetVolatility } from '../engine/volatility.js';
+import { CaptureConfigSchema } from '../capture/captureConfig.js';
 import { evaluateSubscriptionChange, recordCheckFailure } from '../engine/changeDetector.js';
 import { generateChangeSummary } from '../engine/geminiSummary.js';
 
@@ -116,6 +119,14 @@ export async function processOkOutcome(
               if (decision.version) {
                 db.prepare('UPDATE monitor_versions SET change_summary = ? WHERE id = ?').run(aiRes.summary, decision.version.id);
               }
+              const outboxRows = db.prepare('SELECT id, payload FROM notification_outbox WHERE change_event_id = ?').all(decision.changeEventId) as { id: string; payload: string }[];
+              for (const row of outboxRows) {
+                try {
+                  const parsed = JSON.parse(row.payload);
+                  parsed.summary = aiRes.summary;
+                  db.prepare('UPDATE notification_outbox SET payload = ? WHERE id = ?').run(JSON.stringify(parsed), row.id);
+                } catch {}
+              }
             }
           }
         }
@@ -136,6 +147,46 @@ export async function processOkOutcome(
   }
 
   completeJob(db, jobId);
+}
+
+export async function executeProbeJob(
+  db: Database,
+  candidate: WorkerCandidateRow,
+  jobId: string,
+  canonicalUrl: string,
+  _hostname: string
+): Promise<void> {
+  const robots = await checkRobotsPermission(db, canonicalUrl);
+  if (!robots.allowed) {
+    failOrRetryJob(db, jobId, robots.reason ?? 'robots_disallowed', false);
+    return;
+  }
+
+  const sub = candidate.subscription_id
+    ? db.prepare('SELECT id, capture_config, learned_ignore_patterns FROM subscriptions WHERE id = ?')
+        .get(candidate.subscription_id) as { id: string; capture_config: string; learned_ignore_patterns: string } | undefined
+    : undefined;
+
+  let config;
+  try {
+    config = CaptureConfigSchema.parse(JSON.parse(sub?.capture_config || '{}'));
+  } catch {
+    config = CaptureConfigSchema.parse({});
+  }
+
+  try {
+    const probeResult = await probeTargetVolatility(canonicalUrl, config, 1000);
+    if (sub && probeResult.suggestedPatterns.length > 0) {
+      let existing: string[] = [];
+      try { existing = JSON.parse(sub.learned_ignore_patterns || '[]'); } catch {}
+      const merged = Array.from(new Set([...existing, ...probeResult.suggestedPatterns]));
+      db.prepare('UPDATE subscriptions SET learned_ignore_patterns = ? WHERE id = ?')
+        .run(JSON.stringify(merged), sub.id);
+    }
+    completeJob(db, jobId);
+  } catch (err: unknown) {
+    failOrRetryJob(db, jobId, err instanceof Error ? err.message : String(err), false);
+  }
 }
 
 export function handleFailedCapture(
