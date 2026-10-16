@@ -5,6 +5,8 @@ import { requireAuth } from '../auth/middleware.js';
 
 export const stretchRouter = Router();
 
+import crypto from 'node:crypto';
+
 export function extractNumericValue(text: string): number | null {
   if (!text) return null;
   const match = text.match(/([+-]?)\s*[$€£¥₹]?\s*([+-]?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?(?:[eE][+-]?\d+)?)/);
@@ -18,7 +20,7 @@ export function extractNumericValue(text: string): number | null {
 
 /**
  * GET /api/subscriptions/:id/numeric-history (STRETCH Item)
- * Extracts numeric metrics (e.g. price, counts) across version history for Chart.js / Canvas visualization.
+ * Extracts numeric metrics across version history for Chart.js / Canvas visualization.
  */
 stretchRouter.get('/subscriptions/:id/numeric-history', requireAuth, (req, res) => {
   const { id } = req.params;
@@ -48,22 +50,58 @@ stretchRouter.get('/subscriptions/:id/numeric-history', requireAuth, (req, res) 
 });
 
 /**
- * GET /api/subscriptions/:id/rss (STRETCH Item)
- * Generates an RSS 2.0 XML feed of change events for the subscription.
+ * POST /api/subscriptions/:id/rotate-feed-token (Phase 9 RSS Privacy)
+ * Rotates or generates a revocable feed token for private RSS syndication.
+ */
+stretchRouter.post('/subscriptions/:id/rotate-feed-token', requireAuth, (req, res) => {
+  const { id } = req.params;
+  const userId = req.user!.id;
+  const db = getDb();
+
+  const sub = db.prepare('SELECT id FROM subscriptions WHERE id = ? AND user_id = ?').get(id, userId);
+  if (!sub) {
+    res.status(404).json({ error: 'Subscription not found' });
+    return;
+  }
+
+  const newToken = crypto.randomBytes(24).toString('hex');
+  db.prepare('UPDATE subscriptions SET feed_token = ? WHERE id = ?').run(newToken, id);
+
+  res.json({
+    subscriptionId: id,
+    feedToken: newToken,
+    rssUrl: `${env.BASE_URL}/api/subscriptions/${id}/rss?token=${newToken}`,
+  });
+});
+
+/**
+ * GET /api/subscriptions/:id/rss (Phase 9 RSS Privacy)
+ * Generates an RSS 2.0 XML feed authenticated via revocable feed token.
+ * Feeds do not leak sequential IDs, private URLs, or cross-tenant subscription metadata.
  */
 stretchRouter.get('/subscriptions/:id/rss', (req, res) => {
   const { id } = req.params;
-  const db = getDb();
+  const token = (req.query.token as string | undefined) || req.headers.authorization?.replace(/^Bearer\s+/i, '');
 
+  if (!token) {
+    res.status(401).type('text/plain').send('Unauthorized: Missing feed token');
+    return;
+  }
+
+  const db = getDb();
   const sub = db.prepare(`
-    SELECT s.id, s.name, t.canonical_url
+    SELECT s.id, s.name, s.user_id, s.feed_token
     FROM subscriptions s
-    JOIN targets t ON t.id = s.target_id
     WHERE s.id = ?
-  `).get(id) as { id: string; name: string; canonical_url: string } | undefined;
+  `).get(id) as { id: string; name: string; user_id: string; feed_token: string | null } | undefined;
 
   if (!sub) {
     res.status(404).type('text/plain').send('Subscription not found');
+    return;
+  }
+
+  if (!sub.feed_token || sub.feed_token !== token) {
+    res.status(403).type('text/plain').send('Forbidden: Invalid feed token');
     return;
   }
 
@@ -75,12 +113,14 @@ stretchRouter.get('/subscriptions/:id/rss', (req, res) => {
     LIMIT 25
   `).all(id) as Array<{ id: string; event_type: string; summary: string; created_at: string; previous_version_id: string | null; current_version_id: string | null }>;
 
+  const safeName = sub.name.replace(/[<>&]/g, '');
   const itemsXml = events.map(ev => {
     const pubDate = new Date(ev.created_at).toUTCString();
     const link = `${env.BASE_URL}/compare/${sub.id}?from=${ev.previous_version_id || ''}&to=${ev.current_version_id || ''}`;
+    const safeSummary = ev.summary.replace(/[<>&]/g, '');
     return `
     <item>
-      <title>[${ev.event_type}] ${sub.name} - ${ev.summary.replace(/[<>&]/g, '')}</title>
+      <title>[${ev.event_type}] ${safeName} - ${safeSummary}</title>
       <link>${link}</link>
       <guid isPermaLink="false">${ev.id}</guid>
       <pubDate>${pubDate}</pubDate>
@@ -91,9 +131,9 @@ stretchRouter.get('/subscriptions/:id/rss', (req, res) => {
   const rssXml = `<?xml version="1.0" encoding="UTF-8" ?>
 <rss version="2.0">
   <channel>
-    <title>ChangeWatch: ${sub.name.replace(/[<>&]/g, '')}</title>
-    <link>${sub.canonical_url}</link>
-    <description>Live change alert feed for ${sub.name.replace(/[<>&]/g, '')}</description>
+    <title>ChangeWatch: ${safeName}</title>
+    <link>${env.BASE_URL}/monitor/${sub.id}</link>
+    <description>Live change alert feed for ${safeName}</description>
     <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
     ${itemsXml}
   </channel>

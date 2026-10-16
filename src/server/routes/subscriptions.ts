@@ -115,6 +115,7 @@ subscriptionsRouter.post('/', async (req, res) => {
   }
 
   const subscriptionId = crypto.randomUUID();
+  const feedToken = crypto.randomBytes(24).toString('hex');
   const now = new Date().toISOString();
 
   db.transaction(() => {
@@ -129,13 +130,13 @@ subscriptionsRouter.post('/', async (req, res) => {
         id, user_id, target_id, name, interval_minutes, next_check_at,
         capture_config, capture_fingerprint, sensitivity,
         include_selectors, ignore_selectors, noise_filters,
-        learned_ignore_patterns, keyword_rules, is_paused, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '[]', ?, 0, ?)
+        learned_ignore_patterns, keyword_rules, is_paused, feed_token, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '[]', ?, 0, ?, ?)
     `).run(
       subscriptionId, userId, target.id, name, interval_minutes, now,
       JSON.stringify(config), fingerprint, sensitivity,
       JSON.stringify(include_selectors), JSON.stringify(ignore_selectors),
-      JSON.stringify(noise_filters), JSON.stringify(keyword_rules || []), now
+      JSON.stringify(noise_filters), JSON.stringify(keyword_rules || []), feedToken, now
     );
     db.prepare(`
       INSERT INTO sub_state (subscription_id, consecutive_failures, is_currently_down, recent_checks_window, is_noisy)
@@ -143,7 +144,7 @@ subscriptionsRouter.post('/', async (req, res) => {
     `).run(subscriptionId);
   })();
 
-  res.status(201).json({ id: subscriptionId, target_id: canonicalInfo.canonicalUrl, name, interval_minutes, next_check_at: now });
+  res.status(201).json({ id: subscriptionId, target_id: canonicalInfo.canonicalUrl, name, interval_minutes, next_check_at: now, feed_token: feedToken });
 });
 
 // GET /api/subscriptions/:id

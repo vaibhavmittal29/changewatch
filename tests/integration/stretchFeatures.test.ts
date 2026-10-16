@@ -63,8 +63,8 @@ describe('STRETCH Features: http_dom, Gemini, Numeric History, RSS', () => {
     db.prepare(`
       INSERT INTO subscriptions (
         id, user_id, target_id, name, interval_minutes,
-        next_check_at, capture_config, capture_fingerprint, created_at
-      ) VALUES (?, ?, ?, ?, 15, datetime('now'), '{}', ?, datetime('now'))
+        next_check_at, capture_config, capture_fingerprint, feed_token, created_at
+      ) VALUES (?, ?, ?, ?, 15, datetime('now'), '{}', ?, 'test_rss_token', datetime('now'))
     `).run(subId, regData.user.id, targetId, 'Price Watch', fp);
 
     // Insert observations & monitor_versions with numeric price values
@@ -141,8 +141,11 @@ describe('STRETCH Features: http_dom, Gemini, Numeric History, RSS', () => {
     expect(data.points[1].value).toBe(29.99);
   });
 
-  it('Requirement X2: serves valid RSS 2.0 XML feed of change events', async () => {
-    const res = await fetch(`${appUrl}/api/subscriptions/${subId}/rss`);
+  it('Requirement X2: serves valid RSS 2.0 XML feed of change events with feed token', async () => {
+    const unauth = await fetch(`${appUrl}/api/subscriptions/${subId}/rss`);
+    expect(unauth.status).toBe(401);
+
+    const res = await fetch(`${appUrl}/api/subscriptions/${subId}/rss?token=test_rss_token`);
     expect(res.status).toBe(200);
     expect(res.headers.get('content-type')).toContain('application/rss+xml');
 

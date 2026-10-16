@@ -17,11 +17,19 @@ export function migrate(db: Database.Database): void {
     const sql = fs.readFileSync(schemaPath, 'utf-8');
 
     db.exec(sql);
-    db.pragma('user_version = 2');
+    db.pragma('user_version = 3');
   } else if (currentVersion === 1) {
     try {
       db.exec('ALTER TABLE observations ADD COLUMN top_level_navigations INTEGER NOT NULL DEFAULT 1;');
     } catch {}
-    db.pragma('user_version = 2');
+    try {
+      db.exec('ALTER TABLE subscriptions ADD COLUMN feed_token TEXT;');
+    } catch {}
+    db.pragma('user_version = 3');
+  } else if (currentVersion === 2) {
+    try {
+      db.exec('ALTER TABLE subscriptions ADD COLUMN feed_token TEXT;');
+    } catch {}
+    db.pragma('user_version = 3');
   }
 }

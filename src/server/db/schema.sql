@@ -53,11 +53,13 @@ CREATE TABLE IF NOT EXISTS subscriptions (
   learned_ignore_patterns TEXT NOT NULL DEFAULT '[]',
   keyword_rules TEXT NOT NULL DEFAULT '[]',
   is_paused INTEGER NOT NULL DEFAULT 0,
+  feed_token TEXT UNIQUE,
   created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 );
 CREATE INDEX IF NOT EXISTS idx_sub_due ON subscriptions(is_paused, next_check_at);
 CREATE INDEX IF NOT EXISTS idx_sub_group ON subscriptions(target_id, capture_fingerprint);
 CREATE INDEX IF NOT EXISTS idx_sub_user ON subscriptions(user_id);
+CREATE INDEX IF NOT EXISTS idx_sub_feed_token ON subscriptions(feed_token);
 
 CREATE TABLE IF NOT EXISTS observations (
   id TEXT PRIMARY KEY,
