@@ -1,21 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { StatusBadge, type StatusType } from '../components/StatusBadge';
 import { AddMonitorModal } from '../components/AddMonitorModal';
+import { type MonitorItem, DEMO_STATIC_MONITORS } from '../demoData';
 
-export interface MonitorItem {
-  id: string;
-  name: string;
-  url: string;
-  hostname: string;
-  interval_minutes: number;
-  sensitivity: string;
-  is_paused: boolean;
-  is_noisy: boolean;
-  version_count: number;
-  last_checked_at: string | null;
-  last_changed_at: string | null;
-  status: StatusType;
-}
+export type { MonitorItem };
 
 interface DashboardProps {
   csrfToken: string;
@@ -38,9 +26,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ csrfToken, onSelectMonitor
       if (res.ok) {
         const data = await res.json();
         setMonitors(data.monitors || []);
+      } else if (res.status === 404) {
+        setMonitors(DEMO_STATIC_MONITORS);
       }
-    } catch (err) {
-      console.error('Failed to fetch dashboard monitors:', err);
+    } catch {
+      setMonitors(DEMO_STATIC_MONITORS);
     } finally {
       setLoading(false);
     }

@@ -1,0 +1,81 @@
+name: Deploy
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium dependencies
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Verification Pipeline
+        env:
+          NODE_ENV: test
+          NODE_OPTIONS: "--max-old-space-size=4096"
+          APP_SECRET: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+          COOKIE_SECRET: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+          ALLOW_LOCAL_DEMO: "true"
+          ALLOW_NO_SANDBOX: "true"
+          CI: "true"
+        run: npm run verify
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: verify
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build client for GitHub Pages
+        env:
+          GITHUB_PAGES: "true"
+        run: npm run build
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'dist/client'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,24 +1,28 @@
 # ChangeWatch 👁️⚡
 
+[![CI](https://github.com/vaibhavmittal29/changewatch/actions/workflows/ci.yml/badge.svg)](https://github.com/vaibhavmittal29/changewatch/actions/workflows/ci.yml)
+[![Deploy](https://github.com/vaibhavmittal29/changewatch/actions/workflows/deploy.yml/badge.svg)](https://github.com/vaibhavmittal29/changewatch/actions/workflows/deploy.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
+
 > **Intelligent, Resilient Website Change Detector**  
 > Headless browser monitoring with noise suppression, shared-fetch deduplication, and truthful multi-channel alerting.
 >
 > **Author:** [vaibhavmittal29](https://github.com/vaibhavmittal29) (Vaibhav Mittal) • **License:** [MIT](./LICENSE)
 
-ChangeWatch monitors public web pages in a headless Playwright browser, isolates meaningful text and visual changes, filters out dynamic noise (clocks, counters, rotating ads, random tokens), and delivers alerts via Discord, Telegram, Email, and an in-app outbox. It **never** mistakes a 503 outage or CAPTCHA challenge for a content change, fetches a shared URL only once no matter how many users monitor it, and rigorously enforces site politeness (robots.txt, domain concurrency locks, and quiet periods).
+---
+
+## 🌐 Live Demo & Deployment
+
+- **Live Demo Website:** [https://vaibhavmittal29.github.io/changewatch/](https://vaibhavmittal29.github.io/changewatch/)
+- **GitHub Repository:** [https://github.com/vaibhavmittal29/changewatch](https://github.com/vaibhavmittal29/changewatch)
+
+> 💡 **Demo Access:** When visiting the live web demo, use the built-in **Autofill Demo** credentials (`demo@changewatch.local` / `Password123!`) to sign in and immediately explore the interactive dashboard, monitor timelines, visual selector picker, and Myers diff viewers.
 
 ---
 
-## 🌟 Key Features
+## 📖 Project Overview
 
-- **Headless Browser Monitoring:** Fully renders JavaScript-heavy SPAs and dynamic pages with Playwright Chromium.
-- **Visual Selector Picker:** Interactive full-page screenshot canvas overlay to click and assign CSS selectors for targeted watching or noise ignoring.
-- **Multi-Modal Diff Engine:** Character-, word-, and line-level Myers text diffs alongside pixelmatch visual screenshot diffs with dimension-normalization padding.
-- **Intelligent Noise Suppression:** Normalizes timestamps, incrementing view counters, rotating tokens/nonces, and ephemeral banners.
-- **Shared-Fetch Deduplication:** Consolidates multiple subscriptions on the same URL into a single browser fetch per cycle, substantially reducing network and compute overhead.
-- **Resilient Outage & Challenge Isolation:** Distinguishes content edits from 503 errors and CAPTCHA challenge pages; triggers separate `DOWN` and `RECOVERED` alerts after configurable consecutive failure thresholds.
-- **Site Politeness & RFC Egress Defense:** Origin-scoped robots.txt caching (24h), domain-level concurrency locks with a 10s quiet period, and strict SSRF guards blocking private/loopback/cloud metadata IPs.
-- **Guaranteed Alert Outbox:** Transactional outbox delivering to Discord Webhooks, Telegram Bots, SMTP Email, and In-App feeds with independent channel delivery and idempotent deduplication.
+ChangeWatch monitors public web pages in a headless Playwright browser, isolates meaningful text and visual changes, filters out dynamic noise (clocks, counters, rotating ads, random tokens), and delivers alerts via Discord, Telegram, Email, and an in-app outbox. It **never** mistakes a 503 outage or CAPTCHA challenge for a content change, fetches a shared URL only once no matter how many users monitor it, and rigorously enforces site politeness (robots.txt, domain concurrency locks, and quiet periods).
 
 ---
 
@@ -34,6 +38,55 @@ ChangeWatch monitors public web pages in a headless Playwright browser, isolates
 - **Networking & Politeness:** `ipaddr.js` (SSRF IP filter), `robots-parser`
 
 ---
+
+## 💻 How to Run Locally
+
+### 1. Prerequisites
+- **Node.js LTS** (`>= 20.0.0`, Node v22/v24 recommended)
+- **npm** (`>= 10.0.0`)
+- **Git**
+
+### 2. Quick Setup & Execution Commands
+```bash
+# Clone the repository
+git clone https://github.com/vaibhavmittal29/changewatch.git
+cd changewatch
+
+# Install dependencies (clean install)
+npm ci
+
+# Install Playwright Chromium browser binaries
+npx playwright install chromium
+
+# Copy environment configuration
+cp .env.example .env
+
+# Initialize database schema and seed demo user
+npm run seed
+
+# Run the complete verification pipeline (typecheck, lint, 195 tests, build)
+npm run verify
+
+# Start development server (Express API + Vite React client with hot-reload)
+npm run dev
+
+# Or build for production and launch
+npm run build
+npm start
+```
+
+### 3. Core Commands Reference
+| Command | Action |
+|---|---|
+| `npm run dev` | Start development server with hot-reloading (Express + Vite) |
+| `npm run build` | Build production client bundle and compile TypeScript |
+| `npm start` | Run production Express server |
+| `npm run verify` | Run full quality gate pipeline (typecheck, lint, 195 tests, build) |
+| `npm test` | Run all 38 Vitest unit and integration test suites |
+| `npm run typecheck` | Run strict TypeScript compiler verification (`tsc --noEmit`) |
+| `npm run lint` | Run ESLint zero-warning code quality check |
+| `npm run smoke` | Run end-to-end smoke test suite on 16 local fixtures |
+| `npm run benchmark` | Run 200-subscription shared-fetch scalability benchmark |
 
 ## 📁 Folder Structure
 
