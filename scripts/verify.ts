@@ -58,5 +58,5 @@ if (!allPassed) {
   process.exit(1);
 }
 
-console.log('\nAll checks passed successfully! Repository is clean and compliant.');
+console.log('\nAll checks passed successfully! All verification stages passed.');
 process.exit(0);

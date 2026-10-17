@@ -42,7 +42,7 @@ ChangeWatch monitors public web pages in a headless Playwright browser, isolates
 ## 💻 How to Run Locally
 
 ### 1. Prerequisites
-- **Node.js LTS** (`>= 20.0.0`, Node v22/v24 recommended)
+- **Node.js LTS** (`>= 22.0.0`, Node 22+ required)
 - **npm** (`>= 10.0.0`)
 - **Git**
 
@@ -81,8 +81,8 @@ npm start
 | `npm run dev` | Start development server with hot-reloading (Express + Vite) |
 | `npm run build` | Build production client bundle and compile TypeScript |
 | `npm start` | Run production Express server |
-| `npm run verify` | Run full quality gate pipeline (typecheck, lint, 195 tests, build) |
-| `npm test` | Run all 38 Vitest unit and integration test suites |
+| `npm run verify` | Run full quality gate pipeline (typecheck, lint, 210 tests, build) |
+| `npm test` | Run all 41 Vitest unit and integration test suites |
 | `npm run typecheck` | Run strict TypeScript compiler verification (`tsc --noEmit`) |
 | `npm run lint` | Run ESLint zero-warning code quality check |
 | `npm run smoke` | Run end-to-end smoke test suite on 16 local fixtures |
@@ -231,7 +231,7 @@ ChangeWatch decouples the concept of a **Target** (canonical URL and origin) fro
 ## ⚡ Quickstart & Setup
 
 ### Prerequisites
-- **Node.js LTS** (`>= 20.0.0`, Node v24 tested)
+- **Node.js LTS** (`>= 22.0.0`, Node 22+ required)
 - **npm** (`>= 10.0.0`)
 - **Git**
 
@@ -340,6 +340,13 @@ npm run benchmark
 | `OUTAGE_THRESHOLD` | `3` | Consecutive failure count required before sending a DOWN alert |
 | `ALLOW_LOCAL_DEMO` | `false` | Enables localhost/127.0.0.1 demo fixture server and Test Rig |
 | `DEMO_PORT` | `4000` | Port for the local 16-fixture demo server |
+
+> [!TIP]
+> **Generating a Secure `APP_SECRET`**:
+> For production environments, `APP_SECRET` must be a high-entropy string of at least 32 characters (Shannon entropy $\ge 3.0$ bits/character). Generate a cryptographically secure random key using OpenSSL:
+> ```bash
+> openssl rand -base64 32
+> ```
 
 ---
 

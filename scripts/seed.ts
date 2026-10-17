@@ -4,6 +4,12 @@ import { migrate } from '../src/server/db/migrate.js';
 import { hashPassword } from '../src/server/auth/password.js';
 
 async function seed() {
+  if (process.env.NODE_ENV === 'production' && !process.argv.includes('--force')) {
+    console.error('[SECURITY ERROR] scripts/seed.ts cannot be executed in production without explicit --force flag.');
+    console.error('Refusing to seed default demo credentials into a production database.');
+    process.exit(1);
+  }
+
   console.log('Seeding ChangeWatch database...');
   const db = getDb();
   migrate(db);

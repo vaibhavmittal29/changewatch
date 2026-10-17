@@ -6,6 +6,7 @@ import { Compare } from './pages/Compare';
 import { Settings } from './pages/Settings';
 import { TestRig } from './pages/TestRig';
 import { VisualPicker } from './pages/VisualPicker';
+import { isStaticDemo } from './staticDemo';
 
 interface User {
   id: string;
@@ -88,6 +89,12 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-emerald-500/20 selection:text-emerald-300">
+      {isStaticDemo && (
+        <div className="bg-amber-500/10 border-b border-amber-500/30 text-amber-300 text-xs py-2 px-4 text-center font-medium flex items-center justify-center gap-2">
+          <span>⚠️</span>
+          <span>Static preview: sample data only, no backend. For live monitoring run locally or deploy with Node.</span>
+        </div>
+      )}
       {/* Top Navigation */}
       <header className="border-b border-slate-800 bg-slate-900/60 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -102,7 +109,7 @@ export default function App() {
               <div className="flex items-center gap-2">
                 <span className="font-bold text-white text-base tracking-tight">ChangeWatch</span>
                 <span className="hidden sm:inline-block text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">
-                  Live Engine
+                  {isStaticDemo ? 'Static Showcase' : 'Live Engine'}
                 </span>
               </div>
             </div>
