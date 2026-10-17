@@ -9,6 +9,13 @@ export interface RouteValidationResult {
   resolvedIps?: string[];
 }
 
+export type DnsLookupFn = (hostname: string, options: { all: boolean }) => Promise<Array<{ address: string; family: number }>>;
+let customDnsLookup: DnsLookupFn | null = null;
+
+export function setCustomDnsLookup(fn: DnsLookupFn | null): void {
+  customDnsLookup = fn;
+}
+
 const BLOCKED_DOMAINS = [
   'localhost', '.localhost', '.local', '.internal',
   '.lan', '.arpa', '.test', '.example',
@@ -65,7 +72,8 @@ export async function validateRouteUrl(urlStr: string): Promise<RouteValidationR
   }
 
   try {
-    const records = await dns.lookup(hostClean, { all: true });
+    const lookupFn = customDnsLookup || dns.lookup;
+    const records = await lookupFn(hostClean, { all: true });
     if (!records || records.length === 0) {
       return { allowed: false, reason: `DNS_RESOLUTION_EMPTY: ${hostname}` };
     }

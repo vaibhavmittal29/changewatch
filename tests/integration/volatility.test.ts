@@ -17,6 +17,7 @@ describe('Phase D: Volatility Probe (Acceptance Matrix O)', () => {
 
   afterAll(async () => {
     await closeBrowser().catch(() => {});
+    demoServer.closeAllConnections?.();
     await new Promise<void>((resolve) => demoServer.close(() => resolve()));
   });
 

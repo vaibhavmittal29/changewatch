@@ -104,6 +104,8 @@ describe('STRETCH Features: http_dom, Gemini, Numeric History, RSS', () => {
     if (fs.existsSync(testDbPath)) {
       try { fs.unlinkSync(testDbPath); } catch {}
     }
+    demoServer.closeAllConnections?.();
+    appServer.closeAllConnections?.();
     await new Promise<void>((resolve) => demoServer.close(() => resolve()));
     await new Promise<void>((resolve) => appServer.close(() => resolve()));
   });

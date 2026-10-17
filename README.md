@@ -356,7 +356,7 @@ ChangeWatch operates under a zero-trust model for arbitrary URLs:
 
 ## ⚠️ Known Limitations & Engineering Tradeoffs
 
-- **Browser DNS Pinning**: Node.js does not have socket-level control over Chromium's internal DNS resolution. While initial requests are IP-pinned via `safeFetch`, browser-level DNS rebinding is mitigated by per-request route validation and deployment-level egress firewall rules (`iptables`).
+- **Browser DNS Pinning & Egress Policy**: Node.js does not have socket-level control over Chromium's internal socket connection layer. ChangeWatch implements defense-in-depth mitigations: (1) route interception (`page.route`) re-resolves and blocks non-public IPs on all navigations, subresources, and redirects before dispatch; (2) SMTP connections pin resolved public IPs directly with TLS SNI servername. For production deployments, host/container firewall egress rules (`iptables` / cloud security groups) MUST strictly block outbound traffic from browser worker containers to private/internal ranges (`127.0.0.0/8`, `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `169.254.0.0/16`, `::1/128`, `fc00::/7`, `fe80::/10`).
 - **Single-Writer SQLite**: SQLite in WAL mode delivers sub-millisecond read performance and concurrency for single-server deployments. For multi-node cluster scaling, the job queue and storage can be migrated to PostgreSQL with row-level locking (`FOR UPDATE SKIP LOCKED`).
 - **Complex Dynamic Animations**: Pixel-based screenshot diffs can produce false positives on canvas animations or WebGL. ChangeWatch treats normalized text diffs as the primary source of truth, using screenshot diffs as visual confirmation.
 

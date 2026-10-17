@@ -125,6 +125,14 @@ describe('Phase B: Security Hardening Verification', () => {
     });
     expect(r3.status).toBe(400);
 
+    // ReDoS ambiguous alternation: ^(a|aa)+$
+    const r3b = await fetch(`${baseUrl}/api/subscriptions/${subId}/approve-patterns`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Cookie: userACookie, 'x-csrf-token': userACsrf },
+      body: JSON.stringify({ patterns: ['^(a|aa)+$'] }),
+    });
+    expect(r3b.status).toBe(400);
+
     // Assert SQLite record was NOT modified
     const subRow = db.prepare('SELECT learned_ignore_patterns FROM subscriptions WHERE id = ?').get(subId) as { learned_ignore_patterns: string };
     expect(subRow.learned_ignore_patterns).toBe('["existing_pattern"]');

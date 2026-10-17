@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { isSafeRegex } from './regexSafety.js';
 
 export const KeywordRuleSchema = z.union([
   z.string().min(1).max(200),
@@ -18,14 +19,9 @@ export const KeywordRuleSchema = z.union([
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Regex pattern must not exceed 100 characters' });
       return;
     }
-    if (/(\+|\*)\s*(\+|\*)|\([^)]*(\+|\*)[^)]*\)\s*(\+|\*)/.test(rawPattern)) {
+    if (!isSafeRegex(rawPattern)) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'ReDoS-vulnerable regex pattern rejected' });
       return;
-    }
-    try {
-      new RegExp(rawPattern);
-    } catch {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Invalid regex syntax: ${rawPattern}` });
     }
   }
 });
@@ -88,6 +84,9 @@ export function evaluateKeywordRules(text: string, rulesInput: unknown): Evaluat
         return { isMatch: false, matchedPatterns: [] };
       }
     } else if (type === 'regex') {
+      if (!isSafeRegex(pattern)) {
+        continue;
+      }
       try {
         const re = new RegExp(pattern, 'i');
         if (re.test(text)) {

@@ -2,27 +2,14 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { getDb } from '../db/index.js';
 import { enqueueCheckJob, enqueueProbeJob } from '../queue/jobs.js';
+import { isSafeRegex } from '../engine/regexSafety.js';
 
 const ApprovePatternsSchema = z.object({
   patterns: z.array(
     z.string()
       .min(1, 'Pattern cannot be empty')
       .max(200, 'Pattern exceeds max length 200')
-      .refine(val => {
-        if (/(\+|\*|\{[0-9,]+\})\s*(\+|\*|\{[0-9,]+\})/.test(val) || /\([^)]*(\+|\*)[^)]*\)\s*(\+|\*)/.test(val)) {
-          return false;
-        }
-        try {
-          if (val.startsWith('/') && val.endsWith('/')) {
-            new RegExp(val.slice(1, -1));
-          } else {
-            new RegExp(val);
-          }
-          return true;
-        } catch {
-          return false;
-        }
-      }, 'Pattern is not a valid or safe regular expression')
+      .refine(val => isSafeRegex(val), 'Pattern is not a valid or safe regular expression')
   ).max(50, 'Too many patterns (max 50)'),
 }).strict();
 

@@ -96,24 +96,34 @@ export function applyNoiseFilters(
   }
 
   // 5. Learned ignore patterns (probe suggestions approved by user)
+  // Restricted to literal string matching (CW-SEC-02) to guarantee zero ReDoS risk
   if (learnedPatterns && learnedPatterns.length > 0) {
     const lines = cleaned.split(/\r?\n/);
     const filteredLines = lines.filter((line) => {
       const trimmed = line.trim();
       return !learnedPatterns.some((pattern) => {
-        try {
-          if (pattern.startsWith('/') && pattern.endsWith('/')) {
-            const re = new RegExp(pattern.slice(1, -1), 'i');
-            return re.test(trimmed);
-          }
-          if (pattern.startsWith('^') || pattern.endsWith('$')) {
-            const re = new RegExp(pattern, 'i');
-            return re.test(trimmed);
-          }
-        } catch {
-          // Fall through to plain substring match
+        if (!pattern || typeof pattern !== 'string') return false;
+        let literal = pattern;
+        if (literal.startsWith('/') && literal.endsWith('/') && literal.length > 2) {
+          literal = literal.slice(1, -1);
         }
-        return trimmed.includes(pattern);
+        const hasStartAnchor = literal.startsWith('^');
+        const hasEndAnchor = literal.endsWith('$');
+        if (hasStartAnchor) literal = literal.slice(1);
+        if (hasEndAnchor) literal = literal.slice(0, -1);
+        literal = literal.replace(/\\([.*+?^${}()|[\]\\])/g, '$1');
+
+        const trimmedLower = trimmed.toLowerCase();
+        const literalLower = literal.toLowerCase();
+
+        if (hasStartAnchor && hasEndAnchor) {
+          return trimmedLower === literalLower;
+        } else if (hasStartAnchor) {
+          return trimmedLower.startsWith(literalLower);
+        } else if (hasEndAnchor) {
+          return trimmedLower.endsWith(literalLower);
+        }
+        return trimmedLower.includes(literalLower);
       });
     });
     cleaned = filteredLines.join('\n');

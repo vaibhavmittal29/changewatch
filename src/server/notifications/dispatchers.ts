@@ -9,6 +9,7 @@ import {
   sanitizeUrl,
   readLimitedBody,
   validateSmtpHostDns,
+  resolveSmtpHostIp,
 } from './configValidation.js';
 
 export interface NotificationPayload {
@@ -188,11 +189,17 @@ export async function dispatchEmail(config: EmailConfig, payload: NotificationPa
     return { success: false, status: 'FAILED', error: `Untrusted or non-public SMTP host rejected: ${host}` };
   }
 
+  const pinnedIp = await resolveSmtpHostIp(host);
+  const targetHost = pinnedIp || host;
+
   const transporter = nodemailer.createTransport({
-    host,
+    host: targetHost,
     port: port || 587,
     secure: port === 465,
     auth: user && pass ? { user, pass } : undefined,
+    tls: {
+      servername: host,
+    },
     connectionTimeout: 10000,
     greetingTimeout: 5000,
     socketTimeout: 10000,

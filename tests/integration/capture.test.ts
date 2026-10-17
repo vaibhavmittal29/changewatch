@@ -19,6 +19,7 @@ describe('Secure Capture, Classifier, and Demo Server (Criteria B, C, H, Y)', ()
 
   afterAll(async () => {
     await closeBrowser();
+    demoServer.closeAllConnections?.();
     await new Promise<void>((resolve) => demoServer.close(() => resolve()));
   });
 

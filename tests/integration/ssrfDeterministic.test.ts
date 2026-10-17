@@ -17,6 +17,7 @@ describe('Phase 2: SSRF Conclusive & Deterministic Verification', () => {
 
   afterAll(async () => {
     await closeBrowser().catch(() => {});
+    demoServer.closeAllConnections?.();
     await new Promise<void>((resolve) => demoServer.close(() => resolve()));
   });
 

@@ -54,13 +54,38 @@ export const EmailConfigSchema = z.object({
   fromEmail: z.string().email().optional(),
 }).strict();
 
+export type SmtpDnsLookupFn = (hostname: string, options: { all: boolean }) => Promise<Array<{ address: string; family: number }>>;
+let customSmtpDnsLookup: SmtpDnsLookupFn | null = null;
+
+export function setCustomSmtpDnsLookup(fn: SmtpDnsLookupFn | null): void {
+  customSmtpDnsLookup = fn;
+}
+
+export async function resolveSmtpHostIp(host?: string): Promise<string | undefined> {
+  if (!host) return undefined;
+  if (env.SMTP_HOST && host === env.SMTP_HOST) return host;
+  if (/^(\d{1,3}\.){3}\d{1,3}$/.test(host) || host.includes(':')) {
+    return isPublicIp(host) ? host : undefined;
+  }
+  try {
+    const lookupFn = customSmtpDnsLookup || dns.lookup;
+    const records = await lookupFn(host, { all: true });
+    if (records && records.length > 0) {
+      const publicRecord = records.find(r => isPublicIp(r.address));
+      return publicRecord?.address;
+    }
+  } catch {}
+  return undefined;
+}
+
 export async function validateSmtpHostDns(host?: string): Promise<boolean> {
   if (!host) return true;
   if (!isSafeSmtpHostString(host)) return false;
   if (env.SMTP_HOST && host === env.SMTP_HOST) return true;
 
   try {
-    const records = await dns.lookup(host, { all: true });
+    const lookupFn = customSmtpDnsLookup || dns.lookup;
+    const records = await lookupFn(host, { all: true });
     if (!records || records.length === 0) return false;
     for (const r of records) {
       if (!isPublicIp(r.address)) return false;
