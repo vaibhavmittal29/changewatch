@@ -8,6 +8,7 @@ import { probeTargetVolatility } from '../engine/volatility.js';
 import { CaptureConfigSchema } from '../capture/captureConfig.js';
 import { evaluateSubscriptionChange, recordCheckFailure } from '../engine/changeDetector.js';
 import { generateChangeSummary } from '../engine/geminiSummary.js';
+import { enqueueNotificationForEvent } from '../notifications/outbox.js';
 
 export interface WorkerCandidateRow {
   id: string;
@@ -119,19 +120,15 @@ export async function processOkOutcome(
               if (decision.version) {
                 db.prepare('UPDATE monitor_versions SET change_summary = ? WHERE id = ?').run(aiRes.summary, decision.version.id);
               }
-              const outboxRows = db.prepare('SELECT id, payload FROM notification_outbox WHERE change_event_id = ?').all(decision.changeEventId) as { id: string; payload: string }[];
-              for (const row of outboxRows) {
-                try {
-                  const parsed = JSON.parse(row.payload);
-                  parsed.summary = aiRes.summary;
-                  db.prepare('UPDATE notification_outbox SET payload = ? WHERE id = ?').run(JSON.stringify(parsed), row.id);
-                } catch {}
-              }
             }
           }
         }
       } catch (err) {
         console.warn('[processOkOutcome] Failed to enrich with Gemini summary:', err);
+      } finally {
+        if (!decision.isSuppressed) {
+          enqueueNotificationForEvent(db, decision.changeEventId);
+        }
       }
     }
 

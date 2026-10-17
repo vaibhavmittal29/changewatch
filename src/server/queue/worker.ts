@@ -134,13 +134,13 @@ export class WorkerPool {
   public async executeJob(candidate: WorkerCandidateRow): Promise<void> {
     const { id: jobId, target_id: targetId, capture_fingerprint: fingerprint, hostname, canonical_url: canonicalUrl } = candidate;
 
-    const heartbeatTimer = setInterval(() => {
-      heartbeatJob(this.db, jobId, this.workerId, 30_000);
-    }, 10_000);
-
-    startJob(this.db, jobId, this.workerId);
-
+    let heartbeatTimer: NodeJS.Timeout | null = null;
     try {
+      heartbeatTimer = setInterval(() => {
+        heartbeatJob(this.db, jobId, this.workerId, 30_000);
+      }, 10_000);
+
+      startJob(this.db, jobId, this.workerId);
       if (candidate.kind === 'PROBE') {
         await executeProbeJob(this.db, candidate, jobId, canonicalUrl, hostname);
         return;
@@ -231,7 +231,7 @@ export class WorkerPool {
         );
       }
     } finally {
-      clearInterval(heartbeatTimer);
+      if (heartbeatTimer) clearInterval(heartbeatTimer);
       politeness.releaseDomain(hostname, Date.now());
     }
   }

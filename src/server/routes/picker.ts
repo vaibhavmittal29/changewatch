@@ -61,6 +61,10 @@ pickerRouter.post('/render', async (req, res) => {
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
+    if (message.includes('PAGE_TOO_LARGE')) {
+      res.status(413).json({ error: 'PAGE_TOO_LARGE', message });
+      return;
+    }
     console.error('[picker/render] Error caught:', message);
     res.status(500).json({ error: 'Failed to render page for picker', details: message });
   }

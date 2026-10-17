@@ -34,6 +34,7 @@ export function extractNumericValue(text: string, label?: string): number | null
       const parsed = parseFloat(raw);
       if (Number.isFinite(parsed)) return isNeg ? -parsed : parsed;
     }
+    return null;
   }
 
   const match = text.match(/([+-]?)\s*[$€£¥₹]?\s*([+-]?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?(?:[eE][+-]?\d+)?)/);

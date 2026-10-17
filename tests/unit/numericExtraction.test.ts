@@ -30,4 +30,17 @@ describe('Phase 6 Unit: Robust Numeric Value Extraction', () => {
     expect(extractNumericValue('Out of stock - coming soon')).toBeNull();
     expect(extractNumericValue('Lorem ipsum dolor sit amet')).toBeNull();
   });
+
+  it('extracts specific numbers matching the requested label, returning null on mismatch', () => {
+    // Audit finding case: SKU 123 followed by Stock 40 with label Price must return null
+    expect(extractNumericValue('SKU 123 Stock 40', 'Price')).toBeNull();
+
+    // Matching labels
+    expect(extractNumericValue('SKU 123 Price: $99.99 Stock 40', 'Price')).toBe(99.99);
+    expect(extractNumericValue('SKU 123 Stock: 40', 'Stock')).toBe(40);
+    expect(extractNumericValue('SKU 123 Stock: 40', 'SKU')).toBe(123);
+
+    // No label requested falls back to first number in text
+    expect(extractNumericValue('SKU 123 Stock 40')).toBe(123);
+  });
 });

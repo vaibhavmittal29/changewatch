@@ -70,11 +70,16 @@ async function startServer() {
 
   const shutdown = async () => {
     console.log('[ChangeWatch] Shutting down gracefully...');
+    // 1. Stop accepting new incoming requests
+    server.close();
+    server.closeAllConnections?.();
+
+    // 2. Stop scheduler and worker polling loops
     scheduler.stop();
     workerPool.stop();
     notificationWorker.stop();
 
-    // Drain in-flight jobs up to a 10s deadline
+    // 3. Drain in-flight jobs up to a 10s deadline
     const drainResults = await Promise.allSettled([
       workerPool.waitForIdle(10_000),
       notificationWorker.waitForIdle(10_000),
@@ -86,7 +91,10 @@ async function startServer() {
       console.log('[ChangeWatch] All workers drained idle successfully');
     }
 
+    // 4. Close browser instances
     await closeBrowser().catch(() => {});
+
+    // 5. Close database cleanly after all active jobs finish
     try {
       db.close();
       console.log('[ChangeWatch] Database closed cleanly');
@@ -94,9 +102,7 @@ async function startServer() {
       console.error('[ChangeWatch] Error closing database:', err);
     }
 
-    server.close(() => {
-      process.exit(0);
-    });
+    process.exit(0);
   };
 
   process.on('SIGINT', shutdown);

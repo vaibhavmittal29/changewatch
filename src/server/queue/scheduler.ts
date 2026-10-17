@@ -112,6 +112,11 @@ export class Scheduler {
     return this.lastDailyRunDate;
   }
 
+  /**
+   * Executes daily digest and retention tasks at or after DIGEST_HOUR in configured timezone.
+   * Uses persistent daily_task_ledger in SQLite so restarts after DIGEST_HOUR (e.g. 09:30 when
+   * DIGEST_HOUR=9) immediately catch up on first tick, while avoiding duplicate runs.
+   */
   public checkDailyTasks(now?: Date): boolean {
     const currentDate = now || this.clock();
     const { dateStr, hour } = getZonedDateAndHour(currentDate, this.timezone);

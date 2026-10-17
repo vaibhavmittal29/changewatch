@@ -170,6 +170,9 @@ export async function renderPicker(
     });
 
     const sanitizedDom = await page.content();
+    if (sanitizedDom.length > 1.5 * 1024 * 1024) {
+      throw new Error('PAGE_TOO_LARGE: Page DOM exceeds maximum allowable size (1.5MB) for visual picker');
+    }
     const renderId = crypto.randomUUID();
     cacheDom(renderId, sanitizedDom);
 

@@ -218,7 +218,7 @@ export function evaluateSubscriptionChange(
     eventId, sub.id, activeVersion.id, newVersion.id,
     isSuppressed ? 1 : 0, suppressionReason, JSON.stringify(matchedPatterns), summaryText, nowIso
   );
-  if (!isSuppressed) enqueueNotificationForEvent(db, eventId);
+  if (!isSuppressed && !env.GEMINI_API_KEY) enqueueNotificationForEvent(db, eventId);
 
   db.prepare(`
     UPDATE sub_state
