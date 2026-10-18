@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ChangeWatch — VinnovateIT Web Dev Interview Preparation Guide</title>
+<style>
+  @page {
+    size: A4;
+    margin: 18mm 14mm 18mm 14mm;
+    @bottom-right {
+      content: "Page " counter(page);
+      font-size: 9pt;
+      color: #64748b;
+    }
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: #1e293b;
+    line-height: 1.6;
+    font-size: 13.5px;
+    margin: 0;
+    padding: 0;
+  }
+  h1 {
+    font-size: 26px;
+    color: #0f172a;
+    border-bottom: 3px solid #2563eb;
+    padding-bottom: 8px;
+    margin-top: 0;
+    margin-bottom: 12px;
+  }
+  h2 {
+    font-size: 18px;
+    color: #1e3a8a;
+    border-bottom: 1.5px solid #cbd5e1;
+    padding-bottom: 6px;
+    margin-top: 24px;
+    margin-bottom: 12px;
+    page-break-after: avoid;
+  }
+  h3 {
+    font-size: 15px;
+    color: #0f172a;
+    margin-top: 16px;
+    margin-bottom: 6px;
+    page-break-after: avoid;
+  }
+  p {
+    margin-top: 0;
+    margin-bottom: 10px;
+  }
+  .tagline {
+    font-size: 14px;
+    color: #475569;
+    font-style: italic;
+    margin-bottom: 18px;
+  }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 9999px;
+    background-color: #dbeafe;
+    color: #1d4ed8;
+    margin-right: 6px;
+  }
+  .card {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-left: 4px solid #2563eb;
+    padding: 12px 14px;
+    border-radius: 6px;
+    margin-bottom: 14px;
+    page-break-inside: avoid;
+  }
+  .analogy {
+    background-color: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-left: 4px solid #16a34a;
+    padding: 10px 12px;
+    border-radius: 6px;
+    margin: 10px 0;
+    font-size: 13px;
+    color: #166534;
+    page-break-inside: avoid;
+  }
+  .warning-box {
+    background-color: #fffbeb;
+    border: 1px solid #fde68a;
+    border-left: 4px solid #d97706;
+    padding: 10px 12px;
+    border-radius: 6px;
+    margin: 10px 0;
+    font-size: 13px;
+    color: #92400e;
+    page-break-inside: avoid;
+  }
+  .qa-block {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 14px;
+    page-break-inside: avoid;
+  }
+  .qa-q {
+    font-weight: 700;
+    color: #0f172a;
+    font-size: 14px;
+    margin-bottom: 6px;
+  }
+  .say-aloud {
+    background-color: #eff6ff;
+    border-left: 3px solid #3b82f6;
+    padding: 8px 10px;
+    margin: 6px 0;
+    font-size: 13px;
+    color: #1e40af;
+  }
+  .explanation {
+    font-size: 12.5px;
+    color: #475569;
+    margin: 6px 0;
+  }
+  .followup {
+    background-color: #f1f5f9;
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: #334155;
+    margin-top: 6px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 12.5px;
+    page-break-inside: avoid;
+  }
+  th, td {
+    border: 1px solid #cbd5e1;
+    padding: 7px 10px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    background-color: #f1f5f9;
+    font-weight: 600;
+    color: #0f172a;
+  }
+  code {
+    font-family: Consolas, "Courier New", monospace;
+    background-color: #e2e8f0;
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-size: 12px;
+    color: #0f172a;
+  }
+  pre {
+    background-color: #0f172a;
+    color: #f8fafc;
+    padding: 10px;
+    border-radius: 6px;
+    font-size: 11.5px;
+    overflow-x: auto;
+    font-family: Consolas, "Courier New", monospace;
+    line-height: 1.45;
+    page-break-inside: avoid;
+  }
+  .page-break {
+    page-break-before: always;
+  }
+  ul, ol {
+    margin-top: 4px;
+    margin-bottom: 10px;
+    padding-left: 20px;
+  }
+  li {
+    margin-bottom: 4px;
+  }
+</style>
+</head>
+<body>
+
+<!-- COVER / INTRO -->
+<h1>ChangeWatch — Complete Web Dev Interview Guide</h1>
+<div class="tagline">Prepared for VinnovateIT Club Interview (Web Development Subdomain) • First-Year CSE, VIT Vellore</div>
+
+<div class="card">
+  <strong>How to use this guide:</strong> This document is designed specifically for you as a 1st-year CSE fresher. Every single concept is explained from first principles with real-life analogies. All code references, numbers, and features come directly from the real ChangeWatch codebase in this repository. Read it aloud before your interview.
+</div>
+
+<!-- SECTION 1 -->
+<h2>1. The Project in 60 Seconds</h2>
+<p><strong>The Problem:</strong> When you want to track information online—like an out-of-stock sneaker on Amazon, a change in college exam notices on VTOP, or a price drop on a flight—you have to open your browser and refresh the page manually 50 times a day. Existing tools often trigger false alarms because website clocks, live view counters, and rotating ads constantly change even when the real content didn't.</p>
+
+<p><strong>Who Would Use It:</strong> Students tracking course registration portals, shoppers waiting for price drops, researchers tracking government updates, and developers monitoring their company's competitor websites.</p>
+
+<p><strong>What ChangeWatch Does:</strong> ChangeWatch is a full-stack automated web application that monitors any webpage in the background. It takes a snapshot of the webpage using an invisible browser robot, strips away random noise (like clocks and ads), compares the clean text and screenshots with the previous version, and instantly sends an alert to Discord, Telegram, or Email only when meaningful content actually changes.</p>
+
+<div class="analogy">
+  <strong>🍽️ Real-Life Analogy (The Restaurant):</strong>
+  <br>• <strong>Frontend (React):</strong> The dining hall with tables, menus, and buttons where the customer sits.
+  <br>• <strong>Backend (Express):</strong> The kitchen where chefs cook and process orders.
+  <br>• <strong>API (REST):</strong> The waiter carrying orders from the dining table to the kitchen and bringing back meals.
+  <br>• <strong>Database (SQLite):</strong> The locked pantry storage room where recipes, ingredients, and past receipts are kept safely.
+  <br>• <strong>Headless Browser (Playwright):</strong> An invisible robot assistant sent out to an external grocery store to take a photo of the price tag and bring it back to our kitchen.
+</div>
+
+<!-- SECTION 2 -->
+<h2>2. Pitches You Can Say Aloud</h2>
+
+<h3>30-Second Elevator Pitch (Memorize This!)</h3>
+<div class="say-aloud">
+  "Hi! I built ChangeWatch, an automated website change detection platform. It solves the pain of manually refreshing pages for exam circulars or price drops. It uses a React frontend, an Express backend, and a headless Playwright browser to snapshot pages, filter out useless noise like live clocks, compute exact word-level and visual diffs, and notify users via Discord, Telegram, or Email. What makes it unique is that even if 200 users track the same link, it only visits the site once to protect server resources."
+</div>
+
+<h3>2-Minute Detailed Pitch</h3>
+<div class="say-aloud">
+  "Good morning! During my first semester, I noticed how tedious it is to constantly refresh portals for grade updates, hostel bookings, or tech sales. So I built ChangeWatch.
+  <br><br>
+  On the frontend, I used React 19, TypeScript, and Tailwind CSS. Users can paste any URL, pick an interval, and even use an interactive Visual Selector Picker where they click on a specific element—like just a price tag—to monitor.
+  <br><br>
+  On the backend, I built an Express 5 REST API connected to an SQLite database. What makes web monitoring hard is 'false alarms'—ads and live clocks change every second. To solve this, I built a noise normalization engine using Cheerio that strips dynamic timestamps and tokens. For change detection, it computes Myers word-by-word text diffs and pixel-by-pixel image diffs with Pixelmatch.
+  <br><br>
+  For scalability, I implemented a shared-fetch queue: if 200 users monitor the same page, the backend bundles them into a single browser fetch, giving a 99.5% reduction in network overhead. For security, it has full SSRF protection so nobody can abuse the crawler to attack private networks. Building this taught me full-stack architecture, asynchronous job workers, and web security."
+</div>
+
+<!-- SECTION 3 -->
+<div class="page-break"></div>
+<h2>3. How the Website Works Step by Step</h2>
+
+<p>Here is what happens behind the scenes from the moment you click "Add Monitor" to receiving an alert:</p>
+
+<pre>
+[User Browser]
+      │
+      │ 1. Submits Form (URL: "https://example.com", CSS: ".price")
+      ▼
+[React Frontend (Client)]
+      │
+      │ 2. Sends HTTP POST /api/subscriptions with JSON payload + CSRF cookie
+      ▼
+[Express Server (Backend)]
+      │
+      │ 3. Validates URL (SSRF check: blocks localhost/private IPs)
+      │ 4. Stores subscription record in SQLite DB
+      ▼
+[SQLite Database]
+      │
+      │ 5. Background Scheduler polls every 30s: "Which URLs are due?"
+      ▼
+[Worker Pool (3 Workers)]
+      │
+      │ 6. Launches Playwright (Invisible Chromium) to visit webpage
+      │ 7. Captures HTML DOM and full-page PNG screenshot
+      │ 8. Cheerio extracts clean text & strips dynamic noise (clocks/ads)
+      │ 9. Myers Diff compares new text against baseline version in DB
+      ▼
+[Change Detection Decision]
+      ├── If No Change (or 503 outage / CAPTCHA): Do NOT alert. Keep baseline.
+      └── If Real Change Detected:
+            │
+            ├─► 10. Save new Version 2 in SQLite DB
+            ├─► 11. Enqueue alert into notification_outbox table
+            └─► 12. Dispatcher sends message to Discord / Telegram / Email!
+</pre>
+
+<div class="card">
+  <strong>Key Architectural Flow:</strong>
+  <br>1. <strong>Input:</strong> User inputs URL in React UI -> Sent via <code>fetch()</code> REST API call.
+  <br>2. <strong>Storage:</strong> Express writes record into <code>subscriptions</code> table in SQLite.
+  <br>3. <strong>Async Queue:</strong> Background scheduler checks due dates, groups duplicate URLs, and hands jobs to workers.
+  <br>4. <strong>Capture & Compare:</strong> Worker runs Playwright, extracts clean text via Cheerio, runs Myers Diff algorithm.
+  <br>5. <strong>Output:</strong> React UI displays color-coded green/red diffs; webhooks notify user.
+</div>
+
+<!-- SECTION 4 -->
+<h2>4. File and Folder Guide</h2>
+
+<p>ChangeWatch follows a clean separation of concerns. Here is what each directory does:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Folder / File</th>
+      <th>What It Does</th>
+      <th>Should I Open in Interview?</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>src/client/App.tsx</code></td>
+      <td>Main React shell: renders navigation bar, tab switching, and top banner.</td>
+      <td><strong>Yes</strong> (Great starting point)</td>
+    </tr>
+    <tr>
+      <td><code>src/client/pages/Dashboard.tsx</code></td>
+      <td>Shows monitoring stats, list of tracked URLs, status badges, and action buttons.</td>
+      <td><strong>Yes</strong> (Shows clean UI logic)</td>
+    </tr>
+    <tr>
+      <td><code>src/client/pages/Compare.tsx</code></td>
+      <td>Myers text diff viewer (green additions, red deletions) and visual image slider.</td>
+      <td><strong>Yes</strong> (The "Wow" page!)</td>
+    </tr>
+    <tr>
+      <td><code>src/client/pages/VisualPicker.tsx</code></td>
+      <td>Renders remote website preview so user can click to select CSS selectors.</td>
+      <td>Optional</td>
+    </tr>
+    <tr>
+      <td><code>src/server/index.ts</code></td>
+      <td>Backend entry point: boots Express, opens SQLite DB, starts workers.</td>
+      <td><strong>Yes</strong> (Shows server architecture)</td>
+    </tr>
+    <tr>
+      <td><code>src/server/routes/subscriptions.ts</code></td>
+      <td>REST API endpoints to create, list, and delete monitored websites.</td>
+      <td><strong>Yes</strong> (Shows Express routing)</td>
+    </tr>
+    <tr>
+      <td><code>src/server/engine/changeDetector.ts</code></td>
+      <td>Core engine: runs Cheerio text extraction, noise filtering, and Myers diffing.</td>
+      <td><strong>Yes</strong> (Shows algorithm logic)</td>
+    </tr>
+    <tr>
+      <td><code>src/server/capture/routeValidation.ts</code></td>
+      <td>SSRF security shield: resolves DNS and blocks private/loopback IP addresses.</td>
+      <td>Great for security questions</td>
+    </tr>
+    <tr>
+      <td><code>src/server/db/schema.sql</code></td>
+      <td>Database schema: tables for users, targets, versions, diffs, and notifications.</td>
+      <td>Good to show DB design</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- SECTION 5 -->
+<div class="page-break"></div>
+<h2>5. Tech Stack Explained</h2>
+
+<p>Everything used in ChangeWatch, why it was chosen, and its simple alternative:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Technology</th>
+      <th>What It Is</th>
+      <th>Why It Was Used Here</th>
+      <th>Simple Alternative</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>React 19</strong></td>
+      <td>A JavaScript library for building user interfaces using reusable components.</td>
+      <td>Lets us update UI elements (like status badges) instantly without reloading the entire page.</td>
+      <td>Vanilla JavaScript or Vue.js</td>
+    </tr>
+    <tr>
+      <td><strong>TypeScript</strong></td>
+      <td>JavaScript with strict types (checks for bugs before running code).</td>
+      <td>Prevents silly typos (e.g. calling <code>user.namme</code> instead of <code>user.name</code>) and ensures clean contracts.</td>
+      <td>Plain JavaScript</td>
+    </tr>
+    <tr>
+      <td><strong>Tailwind CSS</strong></td>
+      <td>A utility-first CSS framework using class names directly in HTML.</td>
+      <td>Builds modern, responsive dark-mode layouts quickly without writing hundreds of custom CSS files.</td>
+      <td>Bootstrap or custom CSS</td>
+    </tr>
+    <tr>
+      <td><strong>Vite</strong></td>
+      <td>A super-fast modern frontend build tool and dev server.</td>
+      <td>Bundles React code with lightning-fast hot module reloading during development.</td>
+      <td>Webpack or Create React App</td>
+    </tr>
+    <tr>
+      <td><strong>Node.js & Express 5</strong></td>
+      <td>A server runtime (Node) and minimalist web framework (Express) for building REST APIs.</td>
+      <td>Standard, lightweight, and easily handles asynchronous background tasks like scheduling and web crawling.</td>
+      <td>Python FastAPI or Flask</td>
+    </tr>
+    <tr>
+      <td><strong>SQLite (better-sqlite3)</strong></td>
+      <td>A fast, serverless, file-based relational database.</td>
+      <td>Zero setup, lightning fast with Write-Ahead Logging (WAL), stores all state in a single local <code>.db</code> file.</td>
+      <td>PostgreSQL or MySQL</td>
+    </tr>
+    <tr>
+      <td><strong>Playwright</strong></td>
+      <td>A headless browser automation tool maintained by Microsoft.</td>
+      <td>Renders modern JavaScript-heavy websites (SPAs) exactly like a human user's Google Chrome.</td>
+      <td>Puppeteer or Selenium</td>
+    </tr>
+    <tr>
+      <td><strong>Cheerio</strong></td>
+      <td>A fast HTML parser implementing jQuery syntax on the server.</td>
+      <td>Extracts text from HTML tags (<code>&lt;p&gt;</code>, <code>&lt;h1&gt;</code>) in milliseconds without loading heavy browser engines.</td>
+      <td>jsdom or regex parsing</td>
+    </tr>
+    <tr>
+      <td><strong>Myers Diff (diff)</strong></td>
+      <td>An algorithm for computing the shortest sequence of additions and deletions between texts.</td>
+      <td>Identifies the exact words or lines changed so users see clear green additions and red deletions.</td>
+      <td>Levenshtein distance</td>
+    </tr>
+    <tr>
+      <td><strong>Pixelmatch & PNGjs</strong></td>
+      <td>A pixel-by-pixel image comparison library for Node.js.</td>
+      <td>Compares page screenshots and highlights visual changes (e.g. banner updates) with an overlay.</td>
+      <td>Resemble.js</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- SECTION 6 -->
+<h2>6. Beginner Glossary of Web Development Terms</h2>
+
+<ul>
+  <li><strong>DOM (Document Object Model):</strong> The tree structure of HTML elements on a page. The browser turns HTML text into DOM objects that JavaScript can inspect, click, or modify.</li>
+  <li><strong>Component:</strong> A self-contained, reusable building block in React (like a Navbar, Button, or Card) that returns JSX (HTML-like syntax).</li>
+  <li><strong>Props (Properties):</strong> Data passed from a parent React component to a child component (like passing a title string into a Card component).</li>
+  <li><strong>State:</strong> Internal data held inside a component that can change over time (e.g. <code>const [monitors, setMonitors] = useState([])</code>). When state changes, React re-renders the UI automatically.</li>
+  <li><strong>Routing:</strong> Determining what UI or backend response to serve based on the URL path (e.g. visiting <code>/settings</code> vs <code>/compare</code>).</li>
+  <li><strong>API (Application Programming Interface):</strong> A set of rules and URLs that allows the React frontend to ask the Express backend for data.</li>
+  <li><strong>REST (Representational State Transfer):</strong> An API architectural style that uses standard HTTP methods (<code>GET</code>, <code>POST</code>, <code>PATCH</code>, <code>DELETE</code>) on resource URLs (e.g. <code>POST /api/subscriptions</code>).</li>
+  <li><strong>JSON (JavaScript Object Notation):</strong> The standard text format for exchanging data between client and server (looks like <code>{"url": "https://...", "interval": 15}</code>).</li>
+  <li><strong>HTTP Methods:</strong>
+    <ul>
+      <li><code>GET</code>: Retrieve data (read-only, no server changes).</li>
+      <li><code>POST</code>: Create a new resource (e.g. add a new website to track).</li>
+      <li><code>PATCH / PUT</code>: Update an existing resource.</li>
+      <li><code>DELETE</code>: Remove a resource.</li>
+    </ul>
+  </li>
+  <li><strong>CSRF (Cross-Site Request Forgery):</strong> A web attack where a malicious site tricks your browser into making unwanted actions on another site. We prevent this using <code>X-CSRF-Token</code> headers.</li>
+  <li><strong>SSRF (Server-Side Request Forgery):</strong> An attack where a hacker asks our server crawler to visit internal private addresses (like <code>http://localhost:8080</code> or AWS cloud metadata). We prevent this by checking IP ranges and blocking private addresses.</li>
+  <li><strong>Responsive Design:</strong> Designing websites that automatically adapt their layout to look great on phones, tablets, and desktop monitors (achieved via Tailwind responsive prefixes like <code>sm:</code>, <code>md:</code>, <code>lg:</code>).</li>
+</ul>
+
+<!-- SECTION 7 -->
+<div class="page-break"></div>
+<h2>7. 25 Most Likely Interview Questions with Answers</h2>
+
+<h3>Group A: Basic Questions</h3>
+
+<div class="qa-block">
+  <div class="qa-q">Q1: Can you introduce your project and what problem it solves?</div>
+  <div class="say-aloud">"ChangeWatch is an automated website monitoring tool. It tracks public web pages in the background, extracts meaningful content while filtering out dynamic noise like clocks, and notifies users via Discord or Email only when true changes happen."</div>
+  <div class="explanation"><strong>Explanation:</strong> Focus on the real-world utility—preventing manual page refreshing and eliminating false alarms from ads or clocks.</div>
+  <div class="followup"><strong>Likely Follow-up:</strong> Why not just use existing tools like Visualping? <br><strong>Answer:</strong> "Commercial tools have strict paywalls, slow intervals, and don't offer shared-fetch deduplication where 200 users tracking one page only consumes a single network request."</div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">Q2: What was your specific role in building this project?</div>
+  <div class="say-aloud">"I architected the full-stack system, designed the React UI components, built the Express REST endpoints, designed the SQLite database schema, and implemented the noise-filtering logic to stop false alerts."</div>
+  <div class="explanation"><strong>Explanation:</strong> Frame your contributions around understanding the flow, connecting frontend with backend, and deciding the data structures.</div>
+  <div class="followup"><strong>Likely Follow-up:</strong> What was the most fun part to build? <br><strong>Answer:</strong> "Building the Myers Diff viewer in React because seeing the exact green additions and red deletions side-by-side felt like building our own mini-GitHub!"</div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">Q3: Why did you pick React instead of plain HTML/CSS/JavaScript?</div>
+  <div class="say-aloud">"With plain JavaScript, updating the UI when data changes requires manually manipulating the DOM with <code>document.getElementById</code>, which gets messy. React uses declarative state: whenever my monitor list changes in state, the UI updates automatically and efficiently."</div>
+  <div class="explanation"><strong>Explanation:</strong> Interviewers want to see that you understand the concept of state management and reusable components.</div>
+  <div class="followup"><strong>Likely Follow-up:</strong> What is the Virtual DOM in React? <br><strong>Answer:</strong> "It's a lightweight in-memory copy of the real DOM. When state changes, React compares the Virtual DOM with the previous snapshot (called 'diffing') and only touches the exact browser elements that changed."</div>
+</div>
+
+<h3>Group B: Frontend & UI Questions</h3>
+
+<div class="qa-block">
+  <div class="qa-q">Q4: How did you design the layout and make it responsive?</div>
+  <div class="say-aloud">"I used Tailwind CSS with CSS Flexbox and Grid. For example, the Dashboard stats cards use a responsive grid: 1 column on mobile screens (<code>grid-cols-1</code>) and 4 columns on desktop (<code>sm:grid-cols-2 lg:grid-cols-4</code>)."</div>
+  <div class="explanation"><strong>Explanation:</strong> Demonstrates knowledge of modern mobile-first styling practices.</div>
+  <div class="followup"><strong>Likely Follow-up:</strong> What is the difference between CSS Flexbox and CSS Grid? <br><strong>Answer:</strong> "Flexbox is one-dimensional (good for laying items out in a single row or column, like a navigation bar), while Grid is two-dimensional (great for rows and columns simultaneously, like a dashboard of cards)."</div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">Q5: How does the React frontend communicate with the backend?</div>
+  <div class="say-aloud">"The frontend uses the native JavaScript <code>fetch()</code> API to make asynchronous HTTP requests to our Express endpoints (like <code>/api/subscriptions</code>). We manage loading states with React's <code>useState</code> and trigger fetches on mount using <code>useEffect</code>."</div>
+  <div class="explanation"><strong>Explanation:</strong> Highlights core asynchronous programming and lifecycle understanding in React.</div>
+  <div class="followup"><strong>Likely Follow-up:</strong> What is <code>useEffect</code> and when does it run? <br><strong>Answer:</strong> "<code>useEffect</code> lets us perform side effects in components. With an empty dependency array <code>[]</code>, it runs once right after the component first mounts to the screen."</div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">Q6: How does the Visual Selector Picker work on the frontend?</div>
+  <div class="say-aloud">"The user enters a URL, the backend captures an interactive DOM snapshot, and renders it inside an isolated preview container. When the user hovers or clicks an element (like an <code>h1</code> or <code>.price</code> tag), JavaScript calculates its unique CSS selector path and populates the form input."</div>
+  <div class="explanation"><strong>Explanation:</strong> Explains how a complex feature translates into simple DOM event handling.</div>
+  <div class="followup"><strong>Likely Follow-up:</strong> Why is monitoring a specific selector better than the whole page? <br><strong>Answer:</strong> "Monitoring only a CSS selector isolates just the relevant text (like a price tag) and ignores changes happening elsewhere in the header, sidebar, or footer."</div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">Q7: What is the difference between Props and State in React?</div>
+  <div class="say-aloud">"Props are read-only inputs passed from a parent component to a child, like passing a monitor object into a card. State is local, mutable memory owned by the component itself, like whether a modal dialog is currently open or closed."</div>
+  <div class="explanation"><strong>Explanation:</strong> A classic beginner web dev interview question.</div>
+  <div class="followup"><strong>Likely Follow-up:</strong> Can a child component modify its props? <br><strong>Answer:</strong> "No, props are immutable in React. If a child needs to change parent data, the parent must pass down a callback function as a prop."</div>
+</div>
+
+<!-- SECTION 7 CONTINUED -->
+<div class="page-break"></div>
+<h3>Group C: Backend & Data Questions</h3>
+
+<div class="qa-block">
+  <div class="qa-q">Q8: Why did you choose SQLite over MongoDB or PostgreSQL?</div>
+  <div class="say-aloud">"SQLite is an embedded, file-based relational database. It requires zero external daemon servers or Docker containers to run, making development and testing extremely fast. With WAL (Write-Ahead Logging) enabled, it easily handles concurrent reads and background worker writes."</div>
+  <div class="explanation"><strong>Explanation:</strong> Shows practical engineering reasoning rather than just chasing trendy tech.</div>
+  <div class="followup"><strong>Likely Follow-up:</strong> What is WAL mode in SQLite? <br><strong>Answer:</strong> "WAL stands for Write-Ahead Logging. Instead of locking the whole database file on every write, modifications are appended to a separate log file, allowing readers to read simultaneously while a writer writes."</div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">Q9: What is the database schema structure in your project?</div>
+  <div class="say-aloud">"We have relational tables with foreign keys: <code>users</code> for accounts, <code>targets</code> for canonical URLs, <code>subscriptions</code> linking a user to a target with interval settings, <code>check_jobs</code> for the queue, <code>monitor_versions</code> storing clean text and screenshots, and <code>notification_outbox</code> for pending alerts."</div>
+  <div class="explanation"><strong>Explanation:</strong> Demonstrates relational schema normalization knowledge.</div>
+  <div class="followup"><strong>Likely Follow-up:</strong> Why separate <code>targets</code> from <code>subscriptions</code>? <br><strong>Answer:</strong> "That's how our shared-fetch deduplication works! Multiple users can subscribe to the same canonical target URL, but the worker only executes one network fetch for that target."</div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">Q10: What are RESTful APIs and how are they implemented in Express?</div>
+  <div class="say-aloud">"RESTful APIs organize endpoints around resources using standard HTTP verbs. In our Express <code>subscriptions.ts</code> router, <code>GET /api/subscriptions</code> fetches the list, <code>POST</code> creates a new monitor, and <code>DELETE /api/subscriptions/:id</code> removes one using URL parameters."</div>
+  <div class="explanation"><strong>Explanation:</strong> Direct, clear explanation of standard backend API routing.</div>
+  <div class="followup"><strong>Likely Follow-up:</strong> What status codes does your API return? <br><strong>Answer:</strong> "<code>200 OK</code> for successful queries, <code>201 Created</code> on new records, <code>400 Bad Request</code> on invalid schemas, <code>401 Unauthorized</code> for missing auth, <code>403 Forbidden</code> for SSRF blocks, and <code>404 Not Found</code>."</div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">Q11: How do you prevent website outages (like 503 errors) from triggering false change alerts?</div>
+  <div class="say-aloud">"If a website returns an HTTP 500, 502, or 503 error, or shows a Cloudflare CAPTCHA challenge, our change detector marks the check as an outage instead of a content change. The baseline version is left untouched so users don't get alerted that the entire page disappeared."</div>
+  <div class="explanation"><strong>Explanation:</strong> Explains real-world fault tolerance in web scraping.</div>
+  <div class="followup"><strong>Likely Follow-up:</strong> When does the user get alerted for an outage? <br><strong>Answer:</strong> "Only after 3 consecutive failures. If it recovers, the counter resets to 0 and sends a 'RECOVERED' event."</div>
+</div>
+
+<h3>Group D: Code-Level Explanations (5 Key Code Snippets)</h3>
+
+<div class="qa-block">
+  <div class="qa-q">Q12: Can you explain how the Myers Diff algorithm works in your project?</div>
+  <div class="say-aloud">"In <code>src/server/engine/changeDetector.ts</code>, we use the <code>diff</code> library which implements the Myers algorithm. It compares two strings and finds the shortest edit script—marking chunks as either unchanged, added (green), or removed (red). On the client, <code>DiffViewer.tsx</code> maps over these chunks to render the highlighted view."</div>
+  <div class="explanation"><strong>Line-by-Line Breakdown:</strong>
+    <br>1. <code>const changes = diffWords(oldText, newText);</code> -> Computes token differences.
+    <br>2. <code>part.added ? '+ ' : part.removed ? '- ' : '  '</code> -> Formats git-style diff markers.
+    <br>3. <code>hasMeaningfulDiff = addedCount &gt; 0 || removedCount &gt; 0;</code> -> Checks if true change occurred.
+  </div>
+  <div class="followup"><strong>Likely Follow-up:</strong> Why word diff instead of character diff? <br><strong>Answer:</strong> "Character diffs are too granular and noisy for human reading; word diffs highlight exact word updates clearly."</div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">Q13: How does your noise normalization filter work?</div>
+  <div class="say-aloud">"In <code>src/server/engine/noiseFilters.ts</code>, we use regex patterns and Cheerio to clean HTML. It removes <code>&lt;script&gt;</code>, <code>&lt;style&gt;</code>, and <code>&lt;nav&gt;</code> tags, then replaces dynamic timestamps (like '2 minutes ago' or '12:45 PM') and session tokens with static placeholder tokens like <code>[TIMESTAMP]</code>."</div>
+  <div class="explanation"><strong>Line-by-Line Breakdown:</strong>
+    <br>1. <code>$('script, style, noscript, iframe').remove();</code> -> Strips non-content elements.
+    <br>2. <code>text.replace(/\b\d{1,2}:\d{2}(:\d{2})?\s*(AM|PM)?\b/gi, '[TIME]');</code> -> Replaces clocks.
+    <br>3. <code>text.replace(/[a-f0-9]{32,64}/gi, '[TOKEN]');</code> -> Replaces random hex tokens.
+  </div>
+  <div class="followup"><strong>Likely Follow-up:</strong> What if a user wants to monitor an actual clock? <br><strong>Answer:</strong> "Noise filters are configurable checkboxes per monitor in the UI! Users can toggle timestamp filtering off if they wish."</div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">Q14: How does your SSRF security validator work?</div>
+  <div class="say-aloud">"In <code>src/server/capture/routeValidation.ts</code>, before Playwright visits any URL, we resolve its hostname via DNS. We use <code>ipaddr.js</code> to verify that the resolved IP is a public unicast address, blocking loopback <code>127.0.0.1</code>, private LANs <code>192.168.x.x</code>, and cloud metadata <code>169.254.169.254</code>."</div>
+  <div class="explanation"><strong>Line-by-Line Breakdown:</strong>
+    <br>1. <code>const parsedIp = ipaddr.parse(resolvedAddress);</code> -> Parses IPv4 or IPv6 string.
+    <br>2. <code>if (parsedIp.range() !== 'unicast') throw new Error('SSRF_BLOCKED');</code> -> Rejects private ranges.
+    <br>3. We also intercept Playwright subresource requests to prevent DNS rebinding redirects.
+  </div>
+  <div class="followup"><strong>Likely Follow-up:</strong> What is DNS rebinding? <br><strong>Answer:</strong> "It's an attack where an initial DNS query returns a public IP to pass validation, but a second lookup moments later returns a private IP to access internal services. We mitigate this by checking at request time."</div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">Q15: How does the background scheduler decide what jobs to run?</div>
+  <div class="say-aloud">"In <code>src/server/queue/scheduler.ts</code>, a <code>setInterval</code> ticks every 30 seconds. It executes a SQL query to find active subscriptions where <code>next_run_at &lt;= now</code>. It groups them by target URL and inserts a single job into <code>check_jobs</code> with status 'QUEUED'."</div>
+  <div class="explanation"><strong>Line-by-Line Breakdown:</strong>
+    <br>1. <code>SELECT * FROM subscriptions WHERE status = 'ACTIVE' AND next_run_at &lt;= datetime('now');</code>
+    <br>2. <code>INSERT OR IGNORE INTO check_jobs (target_id, status) VALUES (?, 'QUEUED');</code>
+    <br>3. Workers poll the queue, claim a job with atomic status update, and process the fetch.
+  </div>
+  <div class="followup"><strong>Likely Follow-up:</strong> Why use a worker queue instead of fetching directly inside the HTTP request? <br><strong>Answer:</strong> "Web crawling takes several seconds. Doing it synchronously in an HTTP request would freeze the user's browser; background workers keep the API instantaneous."</div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">Q16: How does user authentication and session management work in your backend?</div>
+  <div class="say-aloud">"In <code>src/server/auth/</code>, passwords are encrypted using PBKDF2 with 600,000 hashing iterations and random salts. On login, we generate a cryptographically random session token stored in an <code>httpOnly</code> cookie, plus a CSRF token for protecting state-changing requests."</div>
+  <div class="explanation"><strong>Line-by-Line Breakdown:</strong>
+    <br>1. <code>crypto.pbkdf2(password, salt, 600000, 32, 'sha256', ...)</code> -> Secure password hashing.
+    <br>2. <code>res.cookie('cw_session', token, { httpOnly: true, sameSite: 'lax' });</code> -> Sets secure cookie.
+    <br>3. <code>verifyCsrf</code> middleware verifies <code>req.headers['x-csrf-token'] === req.session.csrfToken</code>.
+  </div>
+  <div class="followup"><strong>Likely Follow-up:</strong> Why use <code>httpOnly</code> for cookies? <br><strong>Answer:</strong> "It prevents malicious client-side JavaScript (XSS attacks) from reading or stealing the user's session token."</div>
+</div>
+
+<!-- SECTION 7 CONTINUED -->
+<div class="page-break"></div>
+<h3>Group E: Deployment & Tools Questions</h3>
+
+<div class="qa-block">
+  <div class="qa-q">Q17: How is your project hosted and deployed?</div>
+  <div class="say-aloud">"The static frontend is hosted on GitHub Pages with an automated GitHub Actions deployment workflow. For local full-stack execution, you run <code>npm install</code> followed by <code>npm start</code>, which launches both the Express API and serves the production Vite client on port 3000."</div>
+  <div class="explanation"><strong>Explanation:</strong> Clearly distinguishes the static showcase on GitHub Pages from the full local/cloud Node.js backend runtime.</div>
+  <div class="followup"><strong>Likely Follow-up:</strong> How does GitHub Pages work if there is no backend server running on it? <br><strong>Answer:</strong> "We created a mock fetch adapter (<code>src/client/staticDemo.ts</code>) that intercepts client API calls on GitHub Pages to supply sample dashboard data and fixtures, with a clear banner explaining it's a static preview."</div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">Q18: What is Git and how did you use it in this project?</div>
+  <div class="say-aloud">"Git is a distributed version control system that tracks every change made to our source code. We use Git to make atomic commits per feature (e.g. <code>fix(security): resolve SSRF checks</code>), collaborate on GitHub, and trigger automated CI/CD verification workflows on push."</div>
+  <div class="explanation"><strong>Explanation:</strong> Shows practical understanding of software engineering workflows.</div>
+  <div class="followup"><strong>Likely Follow-up:</strong> What is the difference between Git and GitHub? <br><strong>Answer:</strong> "Git is the command-line tool installed on my laptop that tracks code history; GitHub is a cloud-hosted platform for storing Git repositories and running CI/CD pipelines."</div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">Q19: How do your CI/CD verification workflows work?</div>
+  <div class="say-aloud">"In <code>.github/workflows/ci.yml</code>, every push triggers an automated runner that executes <code>npm run verify</code>. This chains four strict gates: TypeScript typecheck (<code>tsc --noEmit</code>), ESLint with zero warnings allowed, 41 Vitest test suites (210 tests), and production Vite build."</div>
+  <div class="explanation"><strong>Explanation:</strong> Impressive for a 1st year to speak knowledgeably about CI quality gates.</div>
+  <div class="followup"><strong>Likely Follow-up:</strong> Why enforce zero ESLint warnings? <br><strong>Answer:</strong> "Warnings tend to accumulate into technical debt; enforcing zero warnings guarantees code cleanliness and catches unused variables or type issues immediately."</div>
+</div>
+
+<h3>Group F: Challenges, Limitations, Bugs & Security</h3>
+
+<div class="qa-block">
+  <div class="qa-q">Q20: What was the hardest bug or challenge you faced, and how did you fix it?</div>
+  <div class="say-aloud">"The trickiest challenge was the Express 5 route wildcard change. In older Express 4, a catch-all route was written as <code>app.get('*')</code>. But in Express 5 with path-to-regexp v8, a bare asterisk throws a fatal syntax error! We diagnosed it and migrated to the proper named wildcard syntax: <code>app.get('/{*splat}')</code>."</div>
+  <div class="explanation"><strong>Explanation:</strong> A real, concrete engineering bug that demonstrates debugging skill and modern library knowledge.</div>
+  <div class="followup"><strong>Likely Follow-up:</strong> How did you ensure it won't break again? <br><strong>Answer:</strong> "We wrote a dedicated production boot smoke test (<code>scripts/prodSmoke.ts</code>) that boots the compiled server on an isolated port in CI and verifies all routes."</div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">Q21: What are the current limitations of ChangeWatch?</div>
+  <div class="say-aloud">"Two main limitations: first, Playwright requires a Chromium binary which takes significant RAM, so running dozens of concurrent browsers requires careful worker pooling. Second, websites with aggressive Cloudflare Turnstile or CAPTCHAs will block automated scrapers, so we gracefully mark them as outages."</div>
+  <div class="explanation"><strong>Explanation:</strong> Mature developers know the boundaries and real-world trade-offs of their architecture.</div>
+  <div class="followup"><strong>Likely Follow-up:</strong> How would you handle pages that don't need a heavy browser? <br><strong>Answer:</strong> "We added an <code>http_dom</code> engine option that uses fast raw HTTP GET and Cheerio parsing, consuming 90% less memory for static pages."</div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">Q22: What future features would you like to add?</div>
+  <div class="say-aloud">"I'd love to add Webhook integrations for Slack and Microsoft Teams, a mobile app using React Native, and AI-driven semantic summaries using Gemini to tell users 'Price dropped from ₹1000 to ₹800' in plain English."</div>
+  <div class="explanation"><strong>Explanation:</strong> Shows vision and enthusiasm for expanding web technologies.</div>
+  <div class="followup"><strong>Likely Follow-up:</strong> Is the Gemini AI feature already in the code? <br><strong>Answer:</strong> "Yes, we have an optional stretch module in <code>src/server/engine/geminiSummary.ts</code> that enriches diffs if an API key is provided, falling back gracefully to rule-based summaries if not."</div>
+</div>
+
+<h3>Group G: Tricky & Pressure Questions</h3>
+
+<div class="qa-block">
+  <div class="qa-q">Q23: Did you build this entire project yourself, or did an AI write it?</div>
+  <div class="say-aloud">"I used Google's Antigravity AI coding assistant as an intelligent pair programmer. It helped me write boilerplates, refactor complex regex, and structure tests. However, I directed the architecture, made all design decisions, tested the code, and understand every single file and flow in this repo."</div>
+  <div class="explanation"><strong>Explanation:</strong> Never lie. Clubs respect honesty, intellectual curiosity, and the ability to explain the underlying code thoroughly.</div>
+  <div class="followup"><strong>Likely Follow-up:</strong> If you used AI, prove you understand it: how does the subscription delete cascade work? <br><strong>Answer:</strong> "In <code>src/server/maintenance/deleteFlow.ts</code>, when a subscription is deleted, we remove its foreign key records from <code>monitor_versions</code> and <code>check_runs</code>, unlink any screenshot PNG files on disk, and if no other users monitor that target, clean up the parent target too."</div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">Q24: Why do you want to join the VinnovateIT Web Development subdomain?</div>
+  <div class="say-aloud">"VinnovateIT is known for building high-impact, production-grade applications, not just toy projects. I love building full-stack systems with React and Node.js, and I want to collaborate with seniors who can push my code quality, learn modern cloud architectures, and contribute actively to club hackathons."</div>
+  <div class="explanation"><strong>Explanation:</strong> Tailored specifically to the ambition and culture of VinnovateIT at VIT.</div>
+  <div class="followup"><strong>Likely Follow-up:</strong> What can you contribute immediately? <br><strong>Answer:</strong> "I am comfortable with modern TypeScript, React component design, Express REST APIs, and writing clean, tested code. I'm dependable, fast at learning, and ready to put in the hours."</div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">Q25: Why should we select you over other 1st year applicants?</div>
+  <div class="say-aloud">"Most freshers only build basic static portfolios or todo-lists with vanilla HTML/CSS. I went several steps further by building a full-stack, event-driven web monitoring system with background job workers, database schemas, test automation, and security hardening. I have proven that I can take complex web concepts and turn them into working software."</div>
+  <div class="explanation"><strong>Explanation:</strong> Confident, evidence-backed, and highlights initiative.</div>
+  <div class="followup"><strong>Likely Follow-up:</strong> How do you manage your time between club projects and academics? <br><strong>Answer:</strong> "I follow structured time-blocking: weekdays for classes and fundamentals, and dedicated evening/weekend blocks for coding, git commits, and project milestones."</div>
+</div>
+
+<!-- SECTION 8 -->
+<div class="page-break"></div>
+<h2>8. Honest Answer Guide: "Did You Use AI to Build This?"</h2>
+
+<div class="card">
+  <strong>The Golden Rule:</strong> Never claim you coded 10,000 lines of complex TypeScript from scratch alone in semester 1. The interviewers are experienced seniors; they will immediately know. Instead, frame AI as a <em>modern developer multiplier</em> and prove you have mastery over the code.
+</div>
+
+<h3>The 3-Part Answer Framework:</h3>
+<ol>
+  <li><strong>Acknowledge with Confidence:</strong> "Yes, I used Antigravity (Google's AI coding assistant) as my pair programmer and mentor throughout this project."</li>
+  <li><strong>State What YOU Decided & Learned:</strong> "I chose the tech stack (React, Express, SQLite), designed the user flow, specified the features (like shared-fetch deduplication and noise filtering), reviewed every diff, and debugged tricky edge cases like Express 5 wildcards and SSRF attacks."</li>
+  <li><strong>Offer Code Verification:</strong> "I understand how every component and route works, and I'd be more than happy to open any file right now and explain the logic line by line."</li>
+</ol>
+
+<!-- SECTION 9 -->
+<h2>9. Web Dev Fundamentals Every Fresher Must Know</h2>
+
+<p>Interviewers might ask general web concepts to test your basics. Here are quick, simple explanations:</p>
+
+<ul>
+  <li><strong>How the Internet & Browser Load a Page:</strong>
+    <br>1. You type <code>https://example.com</code> into your browser address bar.
+    <br>2. <strong>DNS Lookup:</strong> Your computer asks a DNS server (like phonebook directory) to translate the domain name into an IP address (e.g. <code>93.184.216.34</code>).
+    <br>3. <strong>TCP/TLS Handshake:</strong> Your browser opens a secure, encrypted connection to that server.
+    <br>4. <strong>HTTP Request:</strong> The browser sends an HTTP <code>GET /</code> request.
+    <br>5. <strong>Rendering:</strong> The server replies with HTML. The browser parses the HTML into a DOM tree, fetches linked CSS and JavaScript files, runs React, and paints the pixels on screen.
+  </li>
+  <li><strong>HTTP vs HTTPS:</strong>
+    <br>• <strong>HTTP:</strong> HyperText Transfer Protocol. Data is sent in plain text across the network. If anyone intercepts it, they can read passwords and cookies.
+    <br>• <strong>HTTPS:</strong> HTTP Secure. Data is encrypted using TLS/SSL before transmission. Even if someone intercepts the packets, they only see scrambled gibberish.
+  </li>
+  <li><strong>Client vs Server:</strong>
+    <br>• <strong>Client:</strong> The device and software running on the user's end (e.g. Chrome browser on your laptop). Handles user interaction and visual display.
+    <br>• <strong>Server:</strong> A computer located in a cloud data center that runs continuously. Listens for client requests, processes business logic, and queries the database.
+  </li>
+  <li><strong>Frontend vs Backend:</strong>
+    <br>• <strong>Frontend:</strong> Everything the user sees and interacts with (buttons, forms, animations, styles). Built with HTML, CSS, JavaScript, React.
+    <br>• <strong>Backend:</strong> The invisible machinery behind the scenes (authentication, database queries, file storage, payment processing, background jobs). Built with Node.js, Express, Python.
+  </li>
+</ul>
+
+<!-- SECTION 10 -->
+<h2>10. 10-Minute Interview Time Allocation Plan</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Time</th>
+      <th>Phase</th>
+      <th>What to Do & Say</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Minute 0 – 2</strong><br>(2 mins)</td>
+      <td><strong>Introduction & Pitch</strong></td>
+      <td>Greet the panel, give your 30-second or 2-minute elevator pitch with a warm, energetic smile. Mention you are a 1st-year CSE student passionate about full-stack web development.</td>
+    </tr>
+    <tr>
+      <td><strong>Minute 2 – 5</strong><br>(3 mins)</td>
+      <td><strong>Live Website Demo</strong></td>
+      <td>Follow the script from <code>DEMO_GUIDE.pdf</code>. Show the Dashboard, create a monitor, trigger a check, show the Myers diff page, and highlight the shared-fetch concept.</td>
+    </tr>
+    <tr>
+      <td><strong>Minute 5 – 9</strong><br>(4 mins)</td>
+      <td><strong>Technical & Code Questions</strong></td>
+      <td>Answer technical questions calmly. If asked to show code, open <code>Dashboard.tsx</code> or <code>changeDetector.ts</code> and explain the logic clearly.</td>
+    </tr>
+    <tr>
+      <td><strong>Minute 9 – 10</strong><br>(1 min)</td>
+      <td><strong>Closing & Passion</strong></td>
+      <td>State why you want to join VinnovateIT. Ask a thoughtful question (e.g. "What kind of web stacks does VinnovateIT plan to use in upcoming flagship hackathons?"). Thank them!</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- SECTION 11 -->
+<div class="page-break"></div>
+<h2>11. Last-Minute Cheat Sheet: 15 Facts to Remember</h2>
+
+<div class="card">
+  <ol>
+    <li><strong>Project Name:</strong> ChangeWatch (Website Change Detector).</li>
+    <li><strong>Frontend Tech:</strong> React 19, TypeScript, Tailwind CSS, Vite.</li>
+    <li><strong>Backend Tech:</strong> Node.js (v22+), Express 5, Better-SQLite3 (WAL mode).</li>
+    <li><strong>Browser Automation:</strong> Playwright (Headless Chromium).</li>
+    <li><strong>Text Parsing:</strong> Cheerio (server-side fast HTML extraction).</li>
+    <li><strong>Diffing Algorithms:</strong> Myers Diff (text/words) and Pixelmatch (screenshots).</li>
+    <li><strong>Port Numbers:</strong> Port <code>3000</code> for main app; Port <code>4000</code> for local 16-fixture demo server.</li>
+    <li><strong>Demo Login Credentials:</strong> <code>demo@changewatch.local</code> / <code>Password123!</code></li>
+    <li><strong>Test Metrics:</strong> 41 test files, 210 tests passing with 100% green status.</li>
+    <li><strong>Consolidation Ratio:</strong> 20:1 and 200:1 shared-fetch deduplication (99.5% overhead reduction).</li>
+    <li><strong>Outage Protection:</strong> 503 errors and CAPTCHAs leave baseline intact (no false alarms).</li>
+    <li><strong>Security Shield:</strong> SSRF protection blocks <code>127.0.0.1</code>, <code>192.168.x.x</code>, and cloud metadata.</li>
+    <li><strong>Password Security:</strong> PBKDF2 with 600,000 iterations + cryptographically random salts.</li>
+    <li><strong>Notification Channels:</strong> Discord Webhooks, Telegram Bot API, and Email (Nodemailer).</li>
+    <li><strong>Live Link:</strong> <code>https://vaibhavmittal29.github.io/changewatch/</code></li>
+  </ol>
+</div>
+
+<!-- SECTION 12 -->
+<h2>12. "Learn Tonight": 5 Concepts to Master Before Bed</h2>
+
+<div class="qa-block">
+  <div class="qa-q">1. React State & Props</div>
+  <p class="explanation">Props are arguments passed into a component from outside (like function parameters); State is internal data held by the component that causes the UI to re-render when changed (using <code>useState</code>). Remember: Props flow down, events bubble up.</p>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">2. REST APIs & HTTP Verbs</div>
+  <p class="explanation">A REST API lets the frontend request data using URLs. <code>GET</code> retrieves data without side effects; <code>POST</code> creates a new resource; <code>PATCH</code> updates part of a resource; <code>DELETE</code> removes it. Status 200 means success; 400 means client mistake; 500 means server crash.</p>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">3. Client-Side Rendering (CSR) vs Server-Side</div>
+  <p class="explanation">In a React SPA (Single Page Application), the server sends a blank HTML shell and a JavaScript bundle. Your browser executes the JS bundle, builds the DOM in memory, and paints the UI without ever reloading the browser page.</p>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">4. Asynchronous JavaScript & Promises</div>
+  <p class="explanation">Operations like network requests (<code>fetch()</code>) and database queries take time. <code>async/await</code> allows JavaScript to pause function execution non-blockingly until the data arrives, keeping the UI smooth and responsive.</p>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">5. SSRF (Server-Side Request Forgery)</div>
+  <p class="explanation">A vulnerability where an attacker tricks a web crawler into fetching internal, private addresses (like <code>http://localhost:8080</code> or AWS metadata). We stop it by resolving DNS first and blocking all non-public IP addresses.</p>
+</div>
+
+</body>
+</html>

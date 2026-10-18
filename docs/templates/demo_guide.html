@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ChangeWatch — Live Demo & Presentation Guide</title>
+<style>
+  @page {
+    size: A4;
+    margin: 18mm 14mm 18mm 14mm;
+    @bottom-right {
+      content: "Page " counter(page);
+      font-size: 9pt;
+      color: #64748b;
+    }
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: #1e293b;
+    line-height: 1.55;
+    font-size: 13px;
+    margin: 0;
+    padding: 0;
+  }
+  h1 {
+    font-size: 24px;
+    color: #0f172a;
+    border-bottom: 3px solid #059669;
+    padding-bottom: 8px;
+    margin-top: 0;
+    margin-bottom: 10px;
+  }
+  h2 {
+    font-size: 17px;
+    color: #065f46;
+    border-bottom: 1.5px solid #cbd5e1;
+    padding-bottom: 5px;
+    margin-top: 22px;
+    margin-bottom: 10px;
+    page-break-after: avoid;
+  }
+  h3 {
+    font-size: 14px;
+    color: #0f172a;
+    margin-top: 14px;
+    margin-bottom: 6px;
+    page-break-after: avoid;
+  }
+  p {
+    margin-top: 0;
+    margin-bottom: 8px;
+  }
+  .tagline {
+    font-size: 13.5px;
+    color: #475569;
+    font-style: italic;
+    margin-bottom: 16px;
+  }
+  .card {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-left: 4px solid #059669;
+    padding: 10px 14px;
+    border-radius: 6px;
+    margin-bottom: 12px;
+    page-break-inside: avoid;
+  }
+  .say-box {
+    background-color: #f0fdf4;
+    border-left: 3px solid #16a34a;
+    padding: 8px 10px;
+    margin: 6px 0;
+    font-size: 12.5px;
+    color: #14532d;
+  }
+  .warning-card {
+    background-color: #fffbeb;
+    border: 1px solid #fde68a;
+    border-left: 4px solid #d97706;
+    padding: 10px 12px;
+    border-radius: 6px;
+    margin-bottom: 12px;
+    font-size: 12.5px;
+    color: #92400e;
+    page-break-inside: avoid;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0;
+    font-size: 12px;
+    page-break-inside: avoid;
+  }
+  th, td {
+    border: 1px solid #cbd5e1;
+    padding: 7px 9px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    background-color: #f1f5f9;
+    font-weight: 600;
+    color: #0f172a;
+  }
+  .table-demo td:first-child {
+    width: 44%;
+    font-weight: 500;
+    color: #0f172a;
+  }
+  .table-demo td:last-child {
+    width: 56%;
+    color: #1e3a8a;
+    background-color: #f8fafc;
+  }
+  code {
+    font-family: Consolas, "Courier New", monospace;
+    background-color: #e2e8f0;
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-size: 11.5px;
+    color: #0f172a;
+  }
+  pre {
+    background-color: #0f172a;
+    color: #f8fafc;
+    padding: 8px 10px;
+    border-radius: 5px;
+    font-size: 11px;
+    overflow-x: auto;
+    font-family: Consolas, "Courier New", monospace;
+    line-height: 1.4;
+    margin: 6px 0 10px 0;
+    page-break-inside: avoid;
+  }
+  .page-break {
+    page-break-before: always;
+  }
+  ul, ol {
+    margin-top: 4px;
+    margin-bottom: 8px;
+    padding-left: 20px;
+  }
+  li {
+    margin-bottom: 3px;
+  }
+  .badge {
+    display: inline-block;
+    padding: 1px 6px;
+    font-size: 10.5px;
+    font-weight: 600;
+    border-radius: 4px;
+    background-color: #dcfce7;
+    color: #166534;
+    margin-right: 4px;
+  }
+  .badge-danger {
+    background-color: #fee2e2;
+    color: #991b1b;
+  }
+</style>
+</head>
+<body>
+
+<!-- COVER / INTRO -->
+<h1>ChangeWatch — Live Demo & Presentation Guide</h1>
+<div class="tagline">3-Minute Step-by-Step Demo Script, Failsafes & Presentation Strategies • VinnovateIT Club Audition</div>
+
+<div class="card">
+  <strong>Fresher Tip for Demo Success:</strong> The interviewers see dozens of presentations. What sets you apart is confidence, smooth navigation, and knowing exactly what button to click. Follow this exact 3-minute script and you will look like a seasoned developer!
+</div>
+
+<!-- SECTION 1 -->
+<h2>1. Before-the-Demo Setup Checklist</h2>
+
+<p>Do this on your laptop <strong>15 minutes before</strong> your interview slot:</p>
+
+<h3>Step-by-Step Run Commands</h3>
+<pre>
+# 1. Open VS Code or Terminal in project folder:
+cd "c:\Programming\Projects of antigravity\project_6_webdev_vinnovateit_websitechangedetector3"
+
+# 2. Check dependencies (already installed, but ensure node >= 22):
+node -v
+
+# 3. Seed database with fresh sample data:
+npm run seed
+
+# 4. Start the server (runs Express backend + serves React frontend):
+npm start
+</pre>
+
+<div class="card">
+  <strong>Key URLs & Ports to Know:</strong>
+  <br>• <strong>Main App URL:</strong> <code>http://localhost:3000</code> (Open this in Chrome beforehand!)
+  <br>• <strong>Default Login Email:</strong> <code>demo@changewatch.local</code>
+  <br>• <strong>Default Password:</strong> <code>Password123!</code> (Click the "Autofill Demo" button on login screen)
+  <br>• <strong>Live GitHub Pages Backup:</strong> <code>https://vaibhavmittal29.github.io/changewatch/</code>
+  <br>• <strong>Demo Fixtures Server:</strong> Port <code>4000</code> (Simulates 16 live website test fixtures locally)
+</div>
+
+<h3>Pre-Flight Room Checks</h3>
+<ul>
+  <li><strong>Browser Zoom:</strong> Set Chrome zoom to <strong>100% or 110%</strong> so text and badges are crisp on external displays or projectors.</li>
+  <li><strong>Tabs Prepared:</strong> Open Tab 1: <code>http://localhost:3000</code> (Logged in, Dashboard open); Tab 2: GitHub repo; Tab 3: Live GitHub Pages link.</li>
+  <li><strong>Do Not Disturb:</strong> Turn on Windows "Focus Assist" or Mac "Do Not Disturb" so WhatsApp/Discord notifications don't pop up during the demo.</li>
+</ul>
+
+<!-- SECTION 2 -->
+<div class="page-break"></div>
+<h2>2. The 3-Minute Demo Script (Two-Column Table)</h2>
+
+<p>Practice this table with a stopwatch until you can deliver it smoothly in 2.5 to 3 minutes:</p>
+
+<table class="table-demo">
+  <thead>
+    <tr>
+      <th>What I Do on Screen</th>
+      <th>What I Say Aloud (Natural Fresher Voice)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>
+        <strong>Step 0: Starting Screen</strong>
+        <br>Show <code>http://localhost:3000</code> with the Dashboard already loaded and 3 sample monitors visible.
+      </td>
+      <td>
+        "Hi! This is ChangeWatch, an intelligent website change detection platform I built to eliminate the pain of manually refreshing pages for exam alerts or price drops."
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <strong>Step 1: Dashboard Overview</strong>
+        <br>Point mouse to the top 4 stats cards: Total Monitors, Active Jobs, Healthy, and Changed.
+      </td>
+      <td>
+        "Right here on the Dashboard, you see an immediate real-time overview: total monitored pages, active background worker jobs, and health states. Below, each card represents a monitored website with its check interval and noise filter settings."
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <strong>Step 2: Add New Monitor</strong>
+        <br>Click the green <strong>"+ Add Monitor"</strong> button in top right. A modal dialog opens.
+        <br>Type:
+        <br>• Name: <code>Tech Headline Tracker</code>
+        <br>• URL: <code>http://localhost:4000/demo/headline</code>
+        <br>• Check: Timestamps & Tokens filters ON.
+        <br>Click <strong>"Save Monitor"</strong>.
+      </td>
+      <td>
+        "Let me add a new website to track. I paste the target URL, select an interval, and keep dynamic noise filters turned ON. When I click save, the Express backend validates the URL for SSRF security, commits it to SQLite, and immediately queues a baseline snapshot."
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <strong>Step 3: Trigger Instant Check</strong>
+        <br>On the newly added card, click <strong>"Check Now"</strong>.
+        <br>A blue pulse shows the worker fetching the page. Status turns to <strong>OK</strong> with a timestamp.
+      </td>
+      <td>
+        "I can click 'Check Now' to trigger an immediate check. In the background, our worker launches headless Playwright, visits the site, captures the clean text, and stores Version 1."
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <strong>Step 4: The Change Detection & Diff</strong>
+        <br>Click on an existing monitor that says <strong>"CHANGED"</strong> (e.g. <code>Demo: Headline</code>).
+        <br>Click the <strong>"View Diff"</strong> button. The app switches to the <strong>Compare</strong> page.
+      </td>
+      <td>
+        "Now here is the core power of ChangeWatch: the Compare page. Notice how it computes an exact Myers word-by-word diff—green text highlights what was added, and red shows what was removed, exactly like GitHub commits. Above it, we have an interactive visual screenshot slider comparing before and after."
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <strong>Step 5: Noise Suppression Magic</strong>
+        <br>Switch to the <strong>Test Rig</strong> tab in the navigation bar.
+        <br>Show the <code>/demo/clock</code> and <code>/demo/counter</code> test fixtures.
+      </td>
+      <td>
+        "What makes web scraping notoriously unreliable is false alarms—live clocks and ads change every second. Notice our Test Rig: for pages with ticking clocks, our noise normalization engine replaces changing times with static tokens, so ChangeWatch stays green and never bugs the user unnecessarily."
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <strong>Step 6: Responsive View Check</strong>
+        <br>Right click -> Inspect -> Toggle Device Toolbar (Mobile View, e.g. iPhone 14).
+      </td>
+      <td>
+        "The interface is built with Tailwind CSS, so the layout is completely mobile-responsive: navigation collapses neatly, and dashboard cards stack cleanly into a single column."
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <strong>Step 7: Closing Line</strong>
+        <br>Switch back to Desktop view on Dashboard.
+      </td>
+      <td>
+        "In summary, ChangeWatch provides full-stack automated web monitoring with smart noise filtering, shared-fetch deduplication, and multi-channel alerting. Thank you! I'd love to answer any questions or dive into the code."
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- SECTION 3 -->
+<h2>3. The "Wow Moment": What to Show for Maximum Impact</h2>
+
+<div class="card">
+  <strong>🌟 The Primary "Wow Moment": The Myers Diff & Visual Slider in <code>Compare.tsx</code></strong>
+  <br><br>
+  <strong>Why it impresses:</strong> Most student projects simply say "website changed: yes/no". Showing a side-by-side color-coded git-style text diff with an interactive image comparison slider proves you built actual analytical algorithms, not just a toy wrapper.
+  <br><br>
+  <strong>How to pitch the Wow Moment:</strong>
+  <div class="say-box">
+    "Look at this diff view: it's not just a binary alert. We implemented the Myers diffing algorithm on the server to pinpoint exact word additions and deletions, and paired it with Pixelmatch visual diffing for screenshots. This gives users 100% transparency into what changed."
+  </div>
+</div>
+
+<!-- SECTION 4 -->
+<div class="page-break"></div>
+<h2>4. Exact Sample Inputs to Type / Click</h2>
+
+<p>Use these exact inputs during your live demo so everything succeeds instantly without typos:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Action / Step</th>
+      <th>Input to Type / Click</th>
+      <th>Expected Output (What Success Looks Like)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>1. Login Screen</strong></td>
+      <td>Click <code>Autofill Demo</code> button -> Click <code>Sign In</code></td>
+      <td>Instantly logs in, creates session cookie, redirects to Dashboard with 3 monitors.</td>
+    </tr>
+    <tr>
+      <td><strong>2. Add Monitor Modal</strong></td>
+      <td>
+        Name: <code>Tech News Headline</code><br>
+        URL: <code>http://localhost:4000/demo/headline</code><br>
+        Interval: <code>15 minutes</code>
+      </td>
+      <td>Modal closes, new card appears on Dashboard with blue <code>QUEUED</code> or green <code>OK</code> badge.</td>
+    </tr>
+    <tr>
+      <td><strong>3. Check Now Button</strong></td>
+      <td>Click <code>Check Now</code> on any card</td>
+      <td>Button briefly shows spinning indicator; status updates to <code>OK (Just now)</code>.</td>
+    </tr>
+    <tr>
+      <td><strong>4. View Diff Page</strong></td>
+      <td>Click <code>View Diff</code> on a changed monitor</td>
+      <td>Opens <code>/compare</code> route; shows red strike-through text and green highlighted text.</td>
+    </tr>
+    <tr>
+      <td><strong>5. Settings Page</strong></td>
+      <td>Click <code>Settings</code> in top navbar</td>
+      <td>Displays Discord Webhook, Telegram, and Email destination cards with active status toggles.</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- SECTION 5 -->
+<h2>5. Features to SKIP or AVOID in the Live Demo</h2>
+
+<div class="warning-card">
+  <strong>⚠️ Do Not Test These in the Live Room:</strong>
+  <ul>
+    <li><span class="badge badge-danger">AVOID</span> <strong>Live Public Websites (Amazon, Flipkart, Google):</strong> Public e-commerce portals have aggressive bot-detection, CAPTCHAs, and dynamic JS that can take 15 seconds to load or block your IP on campus Wi-Fi. <em>Always use the built-in local demo fixture URLs (<code>http://localhost:4000/demo/...</code>)!</em></li>
+    <li><span class="badge badge-danger">AVOID</span> <strong>Sending Real Test Emails:</strong> Unless you have an active SMTP server configured in <code>.env</code>, clicking "Send Test Email" will time out or throw a connection error. Stick to showing the UI config.</li>
+    <li><span class="badge badge-danger">AVOID</span> <strong>Gemini AI API Key live calls:</strong> If the venue Wi-Fi has high latency or your key runs out of quota, the AI summary might take 10 seconds. Show the rule-based summary instead.</li>
+    <li><span class="badge badge-danger">AVOID</span> <strong>Running <code>npm run seed</code> while demo is live:</strong> Re-seeding while the server is running might lock the SQLite database file for a split second. Seed before entering the room!</li>
+  </ul>
+</div>
+
+<!-- SECTION 6 -->
+<h2>6. "Show the Code" Plan: 3 Files to Open</h2>
+
+<p>If an interviewer asks, <em>"Can you open your editor and show me the code?"</em>, calmly open these 3 files:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>File to Open</th>
+      <th>Key Lines to Highlight</th>
+      <th>What to Say Aloud</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>1. <code>src/client/pages/Dashboard.tsx</code></strong><br>(Frontend Component)</td>
+      <td>Lines 25–45: <code>useEffect</code> fetching data from <code>/api/dashboard/stats</code>.<br>Lines 80–120: Card mapping & status badge rendering.</td>
+      <td>"Here is my main React Dashboard. I use a clean hook-based architecture: <code>useEffect</code> queries our Express API on mount, stores monitors in state, and renders responsive cards with status-dependent Tailwind styles."</td>
+    </tr>
+    <tr>
+      <td><strong>2. <code>src/server/engine/changeDetector.ts</code></strong><br>(Core Engine)</td>
+      <td>Lines 30–60: Cheerio text extraction.<br>Lines 80–110: Myers diff calculation using <code>diffWords</code>.</td>
+      <td>"This is the heart of ChangeWatch. We pass raw HTML into Cheerio, strip scripts and styles, apply our noise normalization filters, and run the Myers diff algorithm to compare the new text with the previous version in SQLite."</td>
+    </tr>
+    <tr>
+      <td><strong>3. <code>src/server/capture/routeValidation.ts</code></strong><br>(Security)</td>
+      <td>Lines 20–45: DNS resolution & <code>ipaddr.parse()</code> check.</td>
+      <td>"Security is critical for web scrapers. Here we prevent Server-Side Request Forgery (SSRF): before Playwright touches any URL, we resolve DNS and reject any private, loopback, or cloud metadata IP addresses."</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- SECTION 7 -->
+<div class="page-break"></div>
+<h2>7. Troubleshooting: What If Something Breaks in the Room?</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Failure Scenario</th>
+      <th>Quick Fix (Technical)</th>
+      <th>What to Say Calmly to Interviewers</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Server won't start:<br><code>Port 3000 already in use</code></strong></td>
+      <td>Kill existing node process in terminal:<br><code>npx kill-port 3000</code><br>or in PowerShell:<br><code>Stop-Process -Name node -Force</code><br>then re-run <code>npm start</code>.</td>
+      <td>"Looks like my previous background process is still bound to port 3000. Let me quickly terminate it and restart the server."</td>
+    </tr>
+    <tr>
+      <td><strong>Database locked error:<br><code>SQLITE_BUSY</code></strong></td>
+      <td>Delete <code>changewatch.db-wal</code> and run:<br><code>npm run seed</code></td>
+      <td>"The database had an unclosed write handle from testing. I'm resetting the local SQLite database now."</td>
+    </tr>
+    <tr>
+      <td><strong>Blank page in browser</strong></td>
+      <td>Hard refresh: <code>Ctrl + Shift + R</code><br>Open DevTools Console (<code>F12</code>) to check for failed fetch.</td>
+      <td>"Let me do a hard browser refresh to clear the cached bundle."</td>
+    </tr>
+    <tr>
+      <td><strong>Campus Wi-Fi is completely down</strong></td>
+      <td>ChangeWatch works <strong>100% offline</strong>! Use local fixtures: <code>http://localhost:4000/demo/...</code></td>
+      <td>"One great design feature of ChangeWatch is that it has a built-in local demo server with 16 fixtures, so it runs completely offline without campus internet."</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- SECTION 8 -->
+<h2>8. Backup Plan: If the Demo Completely Fails</h2>
+
+<p>If your laptop freezes or your battery dies, maintain total composure and switch to your backup plan:</p>
+
+<ol>
+  <li><strong>Cloud Backup Link:</strong> Open the deployed version on your phone or interviewer's laptop:
+    <br><code>https://vaibhavmittal29.github.io/changewatch/</code> (Shows the full UI with mock sample data).
+  </li>
+  <li><strong>Screenshots to Have in a Folder (<code>demo_screenshots/</code>):</strong>
+    <br>• <code>01_dashboard.png</code>: Showing 4 stats cards and active monitors.
+    <br>• <code>02_add_monitor_modal.png</code>: Showing URL input and noise filter options.
+    <br>• <code>03_myers_diff_viewer.png</code>: Showing green additions and red deletions.
+    <br>• <code>04_visual_slider.png</code>: Showing side-by-side screenshot comparison.
+    <br>• <code>05_terminal_tests.png</code>: Showing <code>41 passed (210 tests)</code> in green.
+  </li>
+  <li><strong>1-Minute Backup Video:</strong> Record a 60-second screen capture with OBS or Windows Game Bar (<code>Win + G</code>) showing you navigating the app, and save it on your Desktop as <code>changewatch_demo.mp4</code>.</li>
+</ol>
+
+<!-- SECTION 9 -->
+<h2>9. Questions Interviewers Will Ask DURING the Demo</h2>
+
+<div class="card">
+  <strong>Q1: "Where does this data come from? Is it live or mock?"</strong>
+  <div class="say-box">
+    "When running locally with <code>npm start</code>, this data is 100% live! It reads from our local SQLite database. On our static GitHub Pages deployment, it uses a mock adapter to showcase the UI without needing an active Node backend."
+  </div>
+</div>
+
+<div class="card">
+  <strong>Q2: "What happens if I type an invalid URL like 'notawebsite'?"</strong>
+  <div class="say-box">
+    "Our Express backend uses Zod schema validation. If the string is not a valid URL starting with http or https, it immediately rejects the request with HTTP 400 Bad Request and displays a friendly error banner in the React UI."
+  </div>
+</div>
+
+<div class="card">
+  <strong>Q3: "How does your site prevent cross-site scripting (XSS) in the diff viewer?"</strong>
+  <div class="say-box">
+    "React automatically escapes HTML entities inside JSX text nodes. We never use <code>dangerouslySetInnerHTML</code> for raw webpage content, ensuring any malicious JavaScript tags in the target site are rendered safely as plain text."
+  </div>
+</div>
+
+<!-- SECTION 10 -->
+<div class="page-break"></div>
+<h2>10. One-Page Demo Day Checklist</h2>
+
+<div class="card">
+  <p><strong>Print this page or keep it open on your phone right before walking in:</strong></p>
+  <ul>
+    <li>[ ] <strong>Laptop Battery:</strong> Charged above 80% + Charger in bag.</li>
+    <li>[ ] <strong>Local Server Running:</strong> Terminal open, <code>npm start</code> executed, running on <code>http://localhost:3000</code>.</li>
+    <li>[ ] <strong>Browser Tabs Open:</strong>
+      <br>&nbsp;&nbsp;&nbsp;&nbsp;• Tab 1: <code>http://localhost:3000</code> (ChangeWatch Dashboard)
+      <br>&nbsp;&nbsp;&nbsp;&nbsp;• Tab 2: <code>https://github.com/vaibhavmittal29/changewatch</code> (GitHub repository)
+      <br>&nbsp;&nbsp;&nbsp;&nbsp;• Tab 3: <code>https://vaibhavmittal29.github.io/changewatch/</code> (Live deployed showcase)
+    </li>
+    <li>[ ] <strong>Browser Zoom:</strong> Set to 100% or 110% for crisp display.</li>
+    <li>[ ] <strong>Do Not Disturb:</strong> WhatsApp, Discord, and Telegram notifications silenced.</li>
+    <li>[ ] <strong>Offline Backup:</strong> Folder of 5 screenshots on Desktop ready in case of emergency.</li>
+    <li>[ ] <strong>Pen Drive / Drive Backup:</strong> Copy of the project code in Google Drive or USB drive.</li>
+    <li>[ ] <strong>Attitude:</strong> Warm smile, firm handshake, clear voice, enthusiasm to learn!</li>
+  </ul>
+</div>
+
+</body>
+</html>
