@@ -4,22 +4,19 @@ import { NumericTrendChart } from '../components/NumericTrendChart.js';
 interface VersionItem { id: string; version_number: number; content_hash: string; change_summary: string | null; created_at: string; observation_id: string; screenshot_path: string | null; }
 interface EventItem { id: string; event_type: 'CHANGE' | 'DOWN' | 'RECOVERED'; summary: string; suppressed: number; created_at: string; previous_version_id: string | null; current_version_id: string | null; }
 interface CheckRunItem { id: string; outcome: 'OK' | 'ERROR' | 'BLOCKED'; reason: string | null; http_status: number | null; duration_ms: number; was_deduplicated: number; created_at: string; }
-interface MonitorDetailProps { subscriptionId: string; csrfToken: string; onBack: () => void; onCompare: (fromVersionId: string, toVersionId: string) => void; }
+interface MonitorDetailProps { subscriptionId: string; csrfToken: string; onBack: () => void; onCompare?: (fromVersionId: string, toVersionId: string) => void; }
 interface SubDetail { id: string; name: string; canonical_url: string; hostname: string; origin: string; interval_minutes: number; sensitivity: string; is_paused: number; is_noisy: number; }
 
 export const MonitorDetail: React.FC<MonitorDetailProps> = ({
   subscriptionId,
   csrfToken,
   onBack,
-  onCompare,
 }) => {
   const [sub, setSub] = useState<SubDetail | null>(null);
   const [versions, setVersions] = useState<VersionItem[]>([]);
   const [events, setEvents] = useState<EventItem[]>([]);
   const [recentChecks, setRecentChecks] = useState<CheckRunItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedV1, setSelectedV1] = useState<string>('');
-  const [selectedV2, setSelectedV2] = useState<string>('');
   const [actionLoading, setActionLoading] = useState(false);
 
   const handleCheckNow = async () => {
@@ -44,14 +41,6 @@ export const MonitorDetail: React.FC<MonitorDetailProps> = ({
         setVersions(data.versions || []);
         setEvents(data.events || []);
         setRecentChecks(data.recent_checks || []);
-
-        if (data.versions && data.versions.length >= 2) {
-          setSelectedV1(data.versions[1].id);
-          setSelectedV2(data.versions[0].id);
-        } else if (data.versions && data.versions.length === 1) {
-          setSelectedV1(data.versions[0].id);
-          setSelectedV2(data.versions[0].id);
-        }
       }
     } finally {
       setLoading(false);
@@ -109,34 +98,6 @@ export const MonitorDetail: React.FC<MonitorDetailProps> = ({
           >
             Visual Picker ↗
           </a>
-
-          {versions.length >= 2 && (
-            <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 p-1.5 rounded-xl">
-              <span className="text-xs text-slate-400">Compare:</span>
-              <select
-                value={selectedV1}
-                onChange={e => setSelectedV1(e.target.value)}
-                className="bg-slate-950 text-xs text-slate-200 border border-slate-700 rounded px-2 py-1"
-              >
-                {versions.map(v => <option key={v.id} value={v.id}>v{v.version_number}</option>)}
-              </select>
-              <span className="text-xs text-slate-500">vs</span>
-              <select
-                value={selectedV2}
-                onChange={e => setSelectedV2(e.target.value)}
-                className="bg-slate-950 text-xs text-slate-200 border border-slate-700 rounded px-2 py-1"
-              >
-                {versions.map(v => <option key={v.id} value={v.id}>v{v.version_number}</option>)}
-              </select>
-              <button
-                onClick={() => onCompare(selectedV1, selectedV2)}
-                disabled={selectedV1 === selectedV2}
-                className="px-3 py-1 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 text-slate-950 font-semibold text-xs rounded transition cursor-pointer"
-              >
-                Diff
-              </button>
-            </div>
-          )}
         </div>
       </div>
 
@@ -167,14 +128,6 @@ export const MonitorDetail: React.FC<MonitorDetailProps> = ({
                   <p className="text-xs text-slate-400 mt-1">{v.change_summary || (i === versions.length - 1 ? 'Initial baseline captured' : 'Content change confirmed')}</p>
                   <span className="text-[11px] text-slate-500 mt-0.5 block">{new Date(v.created_at).toLocaleString()}</span>
                 </div>
-                {i > 0 && (
-                  <button
-                    onClick={() => onCompare(versions[i].id, versions[i - 1].id)}
-                    className="self-start sm:self-auto px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs rounded-lg border border-slate-700 transition cursor-pointer"
-                  >
-                    Compare with v{versions[i - 1].version_number} &rarr;
-                  </button>
-                )}
               </div>
             ))}
           </div>

@@ -8,7 +8,7 @@ export type { MonitorItem };
 interface DashboardProps {
   csrfToken: string;
   onSelectMonitor: (id: string) => void;
-  onOpenCompare: (subscriptionId: string) => void;
+  onOpenCompare?: (subscriptionId: string) => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ csrfToken, onSelectMonitor }) => {

@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import { MonitorDetail } from './pages/MonitorDetail';
-import { Compare } from './pages/Compare';
 import { Settings } from './pages/Settings';
 import { TestRig } from './pages/TestRig';
 import { VisualPicker } from './pages/VisualPicker';
@@ -15,7 +14,7 @@ interface User {
   digestEnabled: number;
 }
 
-type ViewMode = 'dashboard' | 'detail' | 'compare' | 'settings' | 'test-rig' | 'picker';
+type ViewMode = 'dashboard' | 'detail' | 'settings' | 'test-rig' | 'picker';
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -23,15 +22,10 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [currentView, setCurrentView] = useState<ViewMode>('dashboard');
   const [selectedMonitorId, setSelectedMonitorId] = useState<string | null>(null);
-  const [compareVersions, setCompareVersions] = useState<{ from?: string; to?: string }>({});
   const [pickerTarget, setPickerTarget] = useState<{ url?: string; subscriptionId?: string }>({});
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('from') && params.get('to')) {
-      setCompareVersions({ from: params.get('from')!, to: params.get('to')! });
-      setCurrentView('compare');
-    }
     if (window.location.pathname === '/picker' || params.get('view') === 'picker') {
       setPickerTarget({
         url: params.get('url') || undefined,
@@ -126,14 +120,6 @@ export default function App() {
                 Dashboard
               </button>
               <button
-                onClick={() => setCurrentView('compare')}
-                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition cursor-pointer ${
-                  currentView === 'compare' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                Compare
-              </button>
-              <button
                 onClick={() => setCurrentView('settings')}
                 className={`px-3 py-1.5 text-xs font-medium rounded-lg transition cursor-pointer ${
                   currentView === 'settings' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white'
@@ -184,7 +170,6 @@ export default function App() {
               setSelectedMonitorId(id);
               setCurrentView('detail');
             }}
-            onOpenCompare={() => setCurrentView('compare')}
           />
         )}
 
@@ -192,18 +177,6 @@ export default function App() {
           <MonitorDetail
             subscriptionId={selectedMonitorId}
             csrfToken={csrfToken}
-            onBack={() => setCurrentView('dashboard')}
-            onCompare={(v1, v2) => {
-              setCompareVersions({ from: v1, to: v2 });
-              setCurrentView('compare');
-            }}
-          />
-        )}
-
-        {currentView === 'compare' && (
-          <Compare
-            fromVersionId={compareVersions.from}
-            toVersionId={compareVersions.to}
             onBack={() => setCurrentView('dashboard')}
           />
         )}
