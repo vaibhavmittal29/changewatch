@@ -54,9 +54,10 @@ export const AddMonitorModal: React.FC<AddMonitorModalProps> = ({
         body: JSON.stringify(payload),
       });
 
-      const data = await res.json();
+      const isJson = res.headers.get('content-type')?.includes('application/json');
+      const data = isJson ? await res.json() : {};
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to create monitor');
+        throw new Error(data.error || `Request failed with status ${res.status}`);
       }
 
       onSuccess();

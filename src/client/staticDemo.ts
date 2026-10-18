@@ -98,6 +98,32 @@ export function installStaticMockFetch(): void {
 
       // Subscriptions
       if (path.startsWith('/api/subscriptions')) {
+        if (init?.method === 'POST' && path === '/api/subscriptions') {
+          let b: Record<string, unknown> = {};
+          try { b = typeof init.body === 'string' ? JSON.parse(init.body) : {}; } catch {}
+          const newUrl = String(b.url || 'https://example.com');
+          let host = 'example.com';
+          try { host = new URL(newUrl).hostname; } catch {}
+          const newSub = {
+            id: `sub_demo_${Date.now()}`,
+            name: String(b.name || host),
+            canonical_url: newUrl,
+            hostname: host,
+            interval_minutes: Number(b.interval_minutes) || 15,
+            sensitivity: String(b.sensitivity || 'balanced'),
+            status: 'OK',
+            version_count: 1,
+            last_checked_at: new Date().toISOString(),
+            last_changed_at: new Date().toISOString(),
+            is_paused: 0,
+            has_alert_destination: 0,
+          };
+          MOCK_MONITORS.unshift(newSub);
+          return createJsonResponse({ ok: true, subscription: newSub });
+        }
+        if (path.includes('/check-now')) {
+          return createJsonResponse({ ok: true, message: 'Check triggered' });
+        }
         if (path.includes('/timeline')) {
           return createJsonResponse({
             subscription: MOCK_MONITORS[0],
